@@ -116,7 +116,7 @@ def ask_ai(question):
             return "⚠️ **잠시만요!** 사용량이 많아 AI가 숨을 고르고 있습니다. 1분 뒤에 다시 시도해주세요."
         return f"❌ AI 오류: {str(e)}"
 
-# 공통 프롬프트 지시사항 (생성/수정 모두 사용)
+# 공통 프롬프트 지시사항 (변수 포함: major, grade, semester)
 COMMON_TIMETABLE_INSTRUCTION = """
 [★★★ 핵심 알고리즘: 3단계 검증 및 필터링 (Strict Verification) ★★★]
 
@@ -143,14 +143,16 @@ COMMON_TIMETABLE_INSTRUCTION = """
      - **수업이 없는 빈 시간(공강)은 반드시 흰색 배경**으로 둬라.
      - 셀 내용: `<b>과목명</b><br><small>교수명 (대상학년)</small>`
 
-5. **온라인 및 원격 강의 처리 (필수)**:
-   - 강의 시간이 **'온라인', '원격', 'Cyber', '시간 미지정'** 등이면 **시간표 표(Table)에 넣지 말고**, 표 아래 `### 💻 온라인/원격 강의 목록` 섹션에 리스트로 출력.
+5. **온라인 및 원격 강의 처리 (필수 - 표 내부에 포함)**:
+   - 강의 시간이 **'온라인', '원격', 'Cyber', '시간 미지정'** 등이면 **시간표 표(Table)의 맨 마지막 행에 추가**하세요.
+   - **행 제목:** `<b>온라인/기타</b>`
+   - **내용:** 해당되는 모든 과목을 `<b>과목명</b>(교수명)` 형식으로 나열하세요. (요일 열은 합치거나(colspan) 적절히 분배하여 표시)
+   - **절대 표 밖으로 빼지 말고, 테이블의 일부로 포함시키세요.**
 
 6. **출력 순서 고정**:
-   - 1순위: HTML 시간표 표
-   - 2순위: "### 💻 온라인/원격 강의 목록"
-   - 3순위: "### ✅ 필수 과목 검증 및 학년 일치 확인" (각 과목별로 '대상 학년'이 맞는지 명시)
-   - 4순위: "### ⚠️ 배치 실패/제외 목록" (학년 불일치로 제외된 과목 포함)
+   - 1순위: HTML 시간표 표 (온라인 강의 포함)
+   - 2순위: "### ✅ 필수 과목 검증 및 학년 일치 확인" (각 과목별로 '대상 학년'이 맞는지 명시)
+   - 3순위: "### ⚠️ 배치 실패/제외 목록" (학년 불일치로 제외된 과목 포함)
 """
 
 # 시간표 생성 함수
@@ -196,7 +198,7 @@ def generate_timetable_ai(major, grade, semester, target_credits, blocked_times_
             return "⚠️ **사용량 초과**: 잠시 후 다시 시도해주세요."
         return f"❌ AI 오류: {str(e)}"
 
-# [복구됨] 상담 함수: grade, major, semester 등의 변수를 모두 받아서 처리하는 버전
+# [수정 완료] 상담 함수: 필요한 모든 변수(major, grade, semester)를 받아서 프롬프트에 전달
 def chat_with_timetable_ai(current_timetable, user_input, major, grade, semester):
     llm = get_llm()
     def _execute():
@@ -220,6 +222,7 @@ def chat_with_timetable_ai(current_timetable, user_input, major, grade, semester
         - 시간표를 **재작성**해줘.
         """ + COMMON_TIMETABLE_INSTRUCTION + """
         - **HTML 코드를 마크다운 코드 블록(```html)으로 감싸지 마라.** Raw HTML로 출력해.
+        - 수정 시에도 **없는 정보를 지어내지 않도록** 주의해.
         
         **Case 2. 과목에 대한 단순 질문인 경우 (예: "이거 선수과목 뭐야?"):**
         - **시간표를 다시 출력하지 말고**, 질문에 대한 **텍스트 답변**만 해.
@@ -230,11 +233,11 @@ def chat_with_timetable_ai(current_timetable, user_input, major, grade, semester
         [학습된 문서]
         {context}
         """
-        # input_variables에 모든 변수 포함
+        # input_variables에 COMMON_TIMETABLE_INSTRUCTION 내부의 변수(major, grade, semester)도 모두 포함
         prompt = PromptTemplate(template=template, input_variables=["current_timetable", "user_input", "major", "grade", "semester", "context"])
         chain = prompt | llm
         
-        # invoke 호출 시 모든 변수 전달 (이 부분이 복구됨)
+        # [핵심] invoke 호출 시 빠진 변수 없이 모두 전달
         return chain.invoke({
             "current_timetable": current_timetable, 
             "user_input": user_input,
@@ -388,7 +391,7 @@ elif st.session_state.current_menu == "📅 스마트 시간표(수정가능)":
                 st.write(chat_input)
             with st.chat_message("assistant"):
                 with st.spinner("분석 중..."):
-                    # [복구됨] 함수 호출 시 필요한 인자들을 모두 전달
+                    # [수정됨] 함수 호출 시 필요한 변수들(major, grade, semester) 전달
                     response = chat_with_timetable_ai(st.session_state.timetable_result, chat_input, major, grade, semester)
                     if "[수정]" in response:
                         new_timetable = response.replace("[수정]", "").strip()
@@ -405,6 +408,3 @@ elif st.session_state.current_menu == "📅 스마트 시간표(수정가능)":
                         clean_response = response.replace("[답변]", "").strip()
                         st.markdown(clean_response)
                         st.session_state.timetable_chat_history.append({"role": "assistant", "content": clean_response})
-
-
-
