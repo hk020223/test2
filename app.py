@@ -407,6 +407,7 @@ elif st.session_state.current_menu == "📅 스마트 시간표(수정가능)":
                     else:
                         clean_response = response.replace("[답변]", "").strip()
                         st.markdown(clean_response)
-                        st.session_state.timetable_chat_history.append({"role": "assistant", "content": clean_response})ma
+                        st.session_state.timetable_chat_history.append({"role": "assistant", "content": clean_response})
+
 
 
