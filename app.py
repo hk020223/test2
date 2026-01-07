@@ -422,11 +422,10 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 
 # -----------------------------------------------------------------------------
-# [0] 설정 및 데이터 로드 (팀원 A: 지식 인프라 구축)
+# [0] 설정 및 팀원 A: PDF 전처리(RAG) 엔진 구축
 # -----------------------------------------------------------------------------
 st.set_page_config(page_title="KW-강의마스터 Pro", page_icon="🎓", layout="wide")
 
-# API Key 로드
 if "GOOGLE_API_KEY" in st.secrets:
     api_key = st.secrets["GOOGLE_API_KEY"]
 else:
@@ -436,14 +435,12 @@ if not api_key:
     st.error("🚨 **Google API Key가 설정되지 않았습니다.**")
     st.stop()
 
-# [전처리 핵심] PDF를 조각내고 벡터화하여 지능형 도서관(Vector DB) 생성
+# [팀원 A의 성과] PDF를 조각내고 벡터화하여 검색 저장소(Vector DB) 생성
 @st.cache_resource(show_spinner="116페이지의 광운대 데이터를 정밀 분석 중입니다...")
 def build_vector_db():
-    if not os.path.exists("data"):
-        return None
+    if not os.path.exists("data"): return None
     pdf_files = glob.glob("data/*.pdf")
-    if not pdf_files:
-        return None
+    if not pdf_files: return None
 
     all_pages = []
     for pdf_file in pdf_files:
@@ -454,74 +451,77 @@ def build_vector_db():
         except Exception as e:
             st.warning(f"⚠️ {os.path.basename(pdf_file)} 로드 실패: {e}")
 
-    # 1. 텍스트 분할 전략 (Chunking) - 문맥 유지를 위해 1000자씩 자름 
+    # 1. 텍스트 분할 (Chunking): 1000자씩 자르고 200자 겹침으로 문맥 유지  [cite: 17, 141-1596]
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     docs = text_splitter.split_documents(all_pages)
 
-    # 2. 임베딩 및 벡터 저장소 생성
+    # 2. 벡터화 및 FAISS DB 구축
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    vector_store = FAISS.from_documents(docs, embeddings)
-    return vector_store
+    return FAISS.from_documents(docs, embeddings)
 
-# 지식 베이스(VECTOR_DB) 로드
 VECTOR_DB = build_vector_db()
 
-# [검색 함수] 질문과 가장 관련된 지식 조각 k개를 찾아옴
+# 질문과 관련된 5개의 지식 조각만 찾아오는 함수
 def get_relevant_context(query, k=5):
-    if VECTOR_DB is None:
-        return "학습된 데이터가 없습니다."
+    if VECTOR_DB is None: return "학습된 데이터가 없습니다."
     related_docs = VECTOR_DB.similarity_search(query, k=k)
     return "\n\n".join([doc.page_content for doc in related_docs])
 
 # -----------------------------------------------------------------------------
-# [1] AI 엔진 (팀원 B: 에이전트 논리 연결)
+# [1] 세션 상태 초기화 및 공통 로직
+# -----------------------------------------------------------------------------
+if "global_log" not in st.session_state: st.session_state.global_log = [] 
+if "timetable_result" not in st.session_state: st.session_state.timetable_result = "" 
+if "chat_history" not in st.session_state: st.session_state.chat_history = [] 
+if "current_menu" not in st.session_state: st.session_state.current_menu = "🤖 AI 학사 지식인"
+if "timetable_chat_history" not in st.session_state: st.session_state.timetable_chat_history = []
+
+def clean_html_output(text):
+    cleaned = text.strip().replace("```html", "").replace("```", "")
+    return cleaned.strip()
+
+def run_with_retry(func, *args, **kwargs):
+    max_retries = 5
+    delays = [1, 2, 4, 8, 16]
+    for i in range(max_retries):
+        try: return func(*args, **kwargs)
+        except Exception as e:
+            if "RESOURCE_EXHAUSTED" in str(e) and i < max_retries - 1:
+                time.sleep(delays[i]); continue
+            raise e
+
+# -----------------------------------------------------------------------------
+# [2] AI 에이전트 엔진 (팀원 B: 로직 및 상담)
 # -----------------------------------------------------------------------------
 def get_llm():
     return ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-09-2025", temperature=0)
 
-# 공통 프롬프트 지시사항 (수정 사항: 변수 적용 방식 최적화)
-COMMON_TIMETABLE_INSTRUCTION = """
-[★★★ 핵심 알고리즘: 3단계 검증 및 필터링 ★★★]
-1. Step 1: 요람 기반 수강 대상 과목 리스트 확정
-2. Step 2: 학년 정합성 검사 (사용자 학년과 시간표 대상학년 일치 필수)
-3. Step 3: 시간표 데이터와 정밀 대조 (과목명 완전 일치)
-4. 출력: 반드시 HTML <table> 형식으로 1~9교시 세로형 표를 작성할 것.
-5. 온라인 강의: 표 맨 아래 '온라인/기타' 행에 포함할 것.
-"""
-
 def ask_ai(question):
     llm = get_llm()
-    context = get_relevant_context(question) # 전체가 아닌 관련 정보만 추출!
-    
+    # RAG: 116페이지 전체가 아닌 관련 정보만 추출
+    context = get_relevant_context(question)
     def _execute():
-        template = "관련 문서 내용:\n{context}\n\n질문: {question}\n문서에 기반해 근거를 명시하며 답변해줘."
+        template = "관련 문서 내용:\n{context}\n\n질문: {question}\n근거를 명시하며 답변해줘."
         prompt = PromptTemplate(template=template, input_variables=["context", "question"])
-        chain = prompt | llm
-        return chain.invoke({"context": context, "question": question}).content
-
+        return (prompt | llm).invoke({"context": context, "question": question}).content
     return run_with_retry(_execute)
 
-# (중략 - generate_timetable_ai 및 UI 로직은 기존과 동일하되 context를 get_relevant_context로 변경)
-# ... [기존 코드의 UI 부분 및 세션 초기화 로직 유지] ...
+# (중략 - generate_timetable_ai 함수 등 기존 로직 유지)
 
-# -----------------------------------------------------------------------------
-# [3] 에러가 났던 상담소 부분 수정 (Line 410 부근)
-# -----------------------------------------------------------------------------
-# (Streamlit UI 내부)
 if st.session_state.timetable_result:
     if chat_input := st.chat_input("수정 요청 또는 질문을 입력하세요"):
-        # ... (이전 코드 내용)
+        st.session_state.timetable_chat_history.append({"role": "user", "content": chat_input})
         with st.chat_message("assistant"):
-            with st.spinner("분석 중..."):
-                # chat_with_timetable_ai 내부에서도 get_relevant_context를 사용하도록 수정 필요
+            with st.spinner("전문 에이전트 팀이 분석 중..."):
+                # 팀원 B가 짠 상담 함수 호출
                 response = chat_with_timetable_ai(st.session_state.timetable_result, chat_input, major, grade, semester)
+                
                 if "[수정]" in response:
-                    new_timetable = response.replace("[수정]", "").strip()
-                    st.session_state.timetable_result = clean_html_output(new_timetable)
-                    st.rerun() # 수정 후 화면 갱신
+                    new_table = response.replace("[수정]", "").strip()
+                    st.session_state.timetable_result = clean_html_output(new_table)
+                    st.rerun() # 수정 성공 시 화면 즉시 갱신
                 else:
                     clean_res = response.replace("[답변]", "").strip()
                     st.markdown(clean_res)
-                    # ★ 에러 지점 해결: 뒤에 붙어있던 'ma' 삭제 완료 ★
+                    # ★ 에러 해결: 'ma' 삭제 및 정상적인 append 처리 ★
                     st.session_state.timetable_chat_history.append({"role": "assistant", "content": clean_res})
-
