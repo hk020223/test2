@@ -1,7 +1,0 @@
-langchain
-langchain-community
-langchain-text-splitters
-langchain-google-genai
-faiss-cpu
-pypdf
-tiktoken
