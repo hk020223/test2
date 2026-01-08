@@ -410,240 +410,103 @@ elif st.session_state.current_menu == "📅 스마트 시간표(수정가능)":
                         st.session_state.timetable_chat_history.append({"role": "assistant", "content": clean_response})
                         from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-
 from langchain_community.vectorstores import FAISS
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain_core.prompts import PromptTemplate
 
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+# 1. AI 모델(Gemini) 설정 함수
+def get_llm():
+    api_key = os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        return None
+    return ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=api_key)
 
-# [전처리 핵심] PDF를 조각내고 벡터화하여 저장소 생성
-
+# 2. [전처리 핵심] PDF를 조각내고 벡터화하여 저장소 생성
 @st.cache_resource(show_spinner="116페이지의 광운대 데이터를 정밀 분석 중입니다...")
-
 def build_vector_db():
-
     if not os.path.exists("data"):
-
-        st.error("⚠️ 'data' 폴더가 없습니다.")
-
+        os.makedirs("data") # 폴더가 없으면 생성
+        st.error("⚠️ 'data' 폴더가 생성되었습니다. 그 안에 PDF 파일을 넣어주세요.")
         return None
-
     
-
     pdf_files = glob.glob("data/*.pdf")
-
     if not pdf_files:
-
-        st.error("⚠️ 'data' 폴더에 PDF 파일이 없습니다.")
-
+        st.warning("⚠️ 'data' 폴더에 PDF 파일이 없습니다.")
         return None
-
-
 
     all_pages = []
-
     for pdf_file in pdf_files:
-
         try:
-
             loader = PyPDFLoader(pdf_file)
-
-            # 페이지별로 로드
-
             pages = loader.load_and_split()
-
             all_pages.extend(pages)
-
         except Exception as e:
-
             st.warning(f"⚠️ {os.path.basename(pdf_file)} 로드 실패: {e}")
 
-
-
-    # 1. 텍스트 분할 전략 (Chunking)
-
-    # 1000자씩 자르고 200자를 겹치게 하여 문맥(졸업 요건, 주석 등)이 끊기지 않게 함
-
-    text_splitter = RecursiveCharacterTextSplitter(
-
-        chunk_size=1000,
-
-        chunk_overlap=200,
-
-        separators=["\n\n", "\n", " ", ""]
-
-    )
-
-    docs = text_splitter.split_documents(all_pages)
-
-
-
-    # 2. 임베딩 및 벡터 저장소 생성
-
-    # 구글 임베딩 모델을 사용하여 텍스트를 숫자로 변환
-
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-
-    
-
-    # FAISS 엔진을 사용하여 검색 가능한 데이터베이스 구축
-
-    vector_store = FAISS.from_documents(docs, embeddings)
-
-    
-
-    return vector_store
-
-
-
-# 전역 변수로 벡터 DB 로드
-
-VECTOR_DB = build_vector_db()
-
-
-
-# [검색 함수] 질문과 가장 관련된 5개의 지식 조각을 찾아옴
-
-def get_relevant_context(query, k=5):
-
-    if VECTOR_DB is None:
-
-        return "학습된 데이터가 없습니다."
-
-    
-
-    # 유사도 검색을 통해 관련 문서 추출
-
-    related_docs = VECTOR_DB.similarity_search(query, k=k)
-
-    return "\n\n".join([doc.page_content for doc in related_docs])
-
-    # [전처리 핵심] PDF를 조각내고 벡터화하여 저장소 생성
-
-@st.cache_resource(show_spinner="116페이지의 광운대 데이터를 정밀 분석 중입니다...")
-
-def build_vector_db():
-
-    if not os.path.exists("data"):
-
-        st.error("⚠️ 'data' 폴더가 없습니다.")
-
+    if not all_pages:
         return None
 
-    
-
-    pdf_files = glob.glob("data/*.pdf")
-
-    if not pdf_files:
-
-        st.error("⚠️ 'data' 폴더에 PDF 파일이 없습니다.")
-
-        return None
-
-
-
-    all_pages = []
-
-    for pdf_file in pdf_files:
-
-        try:
-
-            loader = PyPDFLoader(pdf_file)
-
-            # 페이지별로 로드
-
-            pages = loader.load_and_split()
-
-            all_pages.extend(pages)
-
-        except Exception as e:
-
-            st.warning(f"⚠️ {os.path.basename(pdf_file)} 로드 실패: {e}")
-
-
-
-    # 1. 텍스트 분할 전략 (Chunking)
-
-    # 1000자씩 자르고 200자를 겹치게 하여 문맥(졸업 요건, 주석 등)이 끊기지 않게 함
-
+    # 텍스트 분할 전략 (Chunking)
     text_splitter = RecursiveCharacterTextSplitter(
-
         chunk_size=1000,
-
         chunk_overlap=200,
-
         separators=["\n\n", "\n", " ", ""]
-
     )
-
     docs = text_splitter.split_documents(all_pages)
 
-
-
-    # 2. 임베딩 및 벡터 저장소 생성
-
-    # 구글 임베딩 모델을 사용하여 텍스트를 숫자로 변환
-
+    # 임베딩 및 벡터 저장소 생성
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-
-    
-
-    # FAISS 엔진을 사용하여 검색 가능한 데이터베이스 구축
-
     vector_store = FAISS.from_documents(docs, embeddings)
-
     
-
     return vector_store
 
-
-
-# 전역 변수로 벡터 DB 로드
-
+# 벡터 DB 초기화 (전역 변수)
 VECTOR_DB = build_vector_db()
 
-
-
-# [검색 함수] 질문과 가장 관련된 5개의 지식 조각을 찾아옴
-
+# 3. [검색 함수] 질문과 가장 관련된 지식 조각 추출
 def get_relevant_context(query, k=5):
-
     if VECTOR_DB is None:
-
         return "학습된 데이터가 없습니다."
-
     
-
-    # 유사도 검색을 통해 관련 문서 추출
-
     related_docs = VECTOR_DB.similarity_search(query, k=k)
-
     return "\n\n".join([doc.page_content for doc in related_docs])
 
-    def ask_ai(question):
-
+# 4. [답변 함수] AI에게 질문하고 답변 받기
+def ask_ai(question):
     llm = get_llm()
-
-    if not llm: return "⚠️ API Key 오류"
-
+    if not llm:
+        return "🚨 구글 API Key를 터미널 환경변수나 코드에 설정해주세요."
     
-
-    # 116페이지 전체가 아니라 질문과 관련된 조각만 추출!
-
+    # 관련 문서 조각 추출
     context = get_relevant_context(question)
-
     
+    # 질문 템플릿 생성
+    prompt = PromptTemplate.from_template(
+        "당신은 광운대 학사 가이드 전문가입니다. 아래 문서 내용을 바탕으로 질문에 답하세요.\n\n"
+        "관련 문서 내용:\n{context}\n\n"
+        "질문: {question}\n\n"
+        "답변 시 반드시 문서에 근거하여 답변하고, 필요하다면 관련 규정 페이지를 언급하세요."
+    )
+    
+    # 실행 (체인 연결)
+    chain = prompt | llm
+    try:
+        response = chain.invoke({"context": context, "question": question})
+        return response.content
+    except Exception as e:
+        return f"⚠️ AI 답변 생성 중 오류 발생: {e}"
 
-    def _execute():
+# --- 화면 표시 ---
+st.title("🎓 KW-강의마스터 Pro")
+user_input = st.text_input("광운대 학사 규정에 대해 궁금한 점을 물어보세요!")
 
-        chain = PromptTemplate.from_template(
-
-            "관련 문서 내용:\n{context}\n\n질문: {question}\n근거를 명확히 인용해서 답변해줘."
-
-        ) | llm
-
-        return chain.invoke({"context": context, "question": question}).content
-
+if user_input:
+    with st.spinner("답변을 생성 중입니다..."):
+        answer = ask_ai(user_input)
+        st.markdown(answer)
 
 
 
