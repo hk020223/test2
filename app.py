@@ -1,12 +1,17 @@
+졸업요건 +chat
 import streamlit as st
 import pandas as pd
 import os
 import glob
 import datetime
 import time
+import base64
+import io
+from PIL import Image
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
+from langchain_core.messages import HumanMessage
 
 # -----------------------------------------------------------------------------
 # [0] 설정 및 데이터 로드
@@ -34,6 +39,10 @@ if "current_menu" not in st.session_state:
     st.session_state.current_menu = "🤖 AI 학사 지식인"
 if "timetable_chat_history" not in st.session_state:
     st.session_state.timetable_chat_history = []
+if "graduation_analysis_result" not in st.session_state:
+    st.session_state.graduation_analysis_result = ""
+if "graduation_chat_history" not in st.session_state:
+    st.session_state.graduation_chat_history = []
 
 def add_log(role, content, menu_context=None):
     timestamp = datetime.datetime.now().strftime("%H:%M")
@@ -101,6 +110,11 @@ def get_llm():
     if not api_key: return None
     return ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-09-2025", temperature=0)
 
+# 이미지 분석용 모델 (멀티모달 지원 모델 사용)
+def get_pro_llm():
+    if not api_key: return None
+    return ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-09-2025", temperature=0)
+
 def ask_ai(question):
     llm = get_llm()
     if not llm: return "⚠️ API Key 오류"
@@ -116,7 +130,7 @@ def ask_ai(question):
             return "⚠️ **잠시만요!** 사용량이 많아 AI가 숨을 고르고 있습니다. 1분 뒤에 다시 시도해주세요."
         return f"❌ AI 오류: {str(e)}"
 
-# 공통 프롬프트 지시사항 (변수 포함: major, grade, semester)
+# 공통 프롬프트 지시사항
 COMMON_TIMETABLE_INSTRUCTION = """
 [★★★ 핵심 알고리즘: 3단계 검증 및 필터링 (Strict Verification) ★★★]
 
@@ -198,7 +212,7 @@ def generate_timetable_ai(major, grade, semester, target_credits, blocked_times_
             return "⚠️ **사용량 초과**: 잠시 후 다시 시도해주세요."
         return f"❌ AI 오류: {str(e)}"
 
-# [수정 완료] 상담 함수: 필요한 모든 변수(major, grade, semester)를 받아서 프롬프트에 전달
+# 상담 함수
 def chat_with_timetable_ai(current_timetable, user_input, major, grade, semester):
     llm = get_llm()
     def _execute():
@@ -233,11 +247,9 @@ def chat_with_timetable_ai(current_timetable, user_input, major, grade, semester
         [학습된 문서]
         {context}
         """
-        # input_variables에 COMMON_TIMETABLE_INSTRUCTION 내부의 변수(major, grade, semester)도 모두 포함
         prompt = PromptTemplate(template=template, input_variables=["current_timetable", "user_input", "major", "grade", "semester", "context"])
         chain = prompt | llm
         
-        # [핵심] invoke 호출 시 빠진 변수 없이 모두 전달
         return chain.invoke({
             "current_timetable": current_timetable, 
             "user_input": user_input,
@@ -256,6 +268,128 @@ def chat_with_timetable_ai(current_timetable, user_input, major, grade, semester
             else:
                 return clean_html_output(response_content)
         return response_content
+    except Exception as e:
+        if "RESOURCE_EXHAUSTED" in str(e):
+            return "⚠️ **사용량 초과**: 잠시 후 다시 시도해주세요."
+        return f"❌ AI 오류: {str(e)}"
+
+# 졸업 요건 분석 함수
+def analyze_graduation_requirements(uploaded_images):
+    llm = get_pro_llm()
+    if not llm: return "⚠️ API Key 오류"
+
+    def encode_image(image_file):
+        image_file.seek(0)
+        return base64.b64encode(image_file.read()).decode("utf-8")
+
+    image_messages = []
+    for img_file in uploaded_images:
+        base64_image = encode_image(img_file)
+        image_messages.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
+        })
+
+    def _execute():
+        prompt = """
+        당신은 광운대학교 졸업 요건 분석 전문가입니다.
+        제공된 학생의 [취득 학점 내역 캡처 이미지]와 [학습된 학사 문서]를 바탕으로 졸업 요건을 진단해주세요.
+
+        **[분석 절차]**
+        1. **이미지 정보 추출:** 캡처 이미지에서 학생의 입학 연도, 소속 학과, 현재까지 취득한 총 학점, 그리고 각 영역별(교양 필수, 교양 선택, 전공 필수, 전공 선택 등) 이수 학점을 정확히 추출하세요.
+        2. **졸업 요건 대조:** 추출한 정보를 바탕으로 [학습된 학사 문서]에서 해당 학생의 입학 연도 및 학과에 적용되는 졸업 요건(총 학점, 영역별 필수 학점, 필수 과목 등)을 찾아내세요.
+        3. **비교 및 진단:** 학생의 현재 취득 내역과 졸업 요건을 비교하여 부족한 부분이 있는지 면밀히 분석하세요.
+
+        **[출력 형식]**
+        다음 내용을 포함하여 마크다운 형식으로 명확하게 리포트를 작성해주세요.
+
+        ### 🎓 졸업 요건 진단 결과
+
+        **1. 종합 판정:**
+        - **결과:** [졸업 가능 / 졸업 불가 / 요건 충족 중]
+        - **요약:** (예: 현재 총 120학점 취득하였으며, 졸업까지 10학점이 더 필요합니다.)
+
+        **2. 학점 이수 현황 (기준: {입학연도}학번 {학과})**
+        | 구분 | 필수 학점 | 현재 취득 학점 | 부족 학점 | 상태 |
+        | :--- | :---: | :---: | :---: | :---: |
+        | 총 학점 | {총 필수} | {현재 총} | {부족 총} | {이모지} |
+        | 교양 필수 | ... | ... | ... | ... |
+        | 교양 선택 | ... | ... | ... | ... |
+        | 전공 필수 | ... | ... | ... | ... |
+        | 전공 선택 | ... | ... | ... | ... |
+        | ... | ... | ... | ... | ... |
+        *(각 영역별로 상세히 작성해주세요. 상태는 ✅(충족), ⚠️(부족) 등으로 표시)*
+
+        **3. 미이수 필수 과목 및 영역**
+        - (예: 전공 필수 '캡스톤디자인' 미이수)
+        - (예: 교양 필수 '융합적사고와글쓰기' 미이수)
+        - ...
+        *(없으면 "없음"으로 표시)*
+
+        **4. 졸업을 위한 조언**
+        - (예: 다음 학기에 전공 필수 과목을 우선적으로 수강해야 합니다.)
+        - (예: 부족한 교양 선택 학점을 채우기 위해 계절학기 수강을 고려해보세요.)
+        - ...
+
+        **[참고 자료]**
+        - 분석에 참고한 [학습된 학사 문서]의 관련 내용을 인용해주세요.
+        """
+        
+        content_list = [{"type": "text", "text": prompt}]
+        content_list.extend(image_messages)
+        content_list.append({"type": "text", "text": f"\n\n[학습된 학사 문서]\n{PRE_LEARNED_DATA}"})
+
+        message = HumanMessage(content=content_list)
+        
+        response = llm.invoke([message])
+        return response.content
+
+    try:
+        return run_with_retry(_execute)
+    except Exception as e:
+         if "RESOURCE_EXHAUSTED" in str(e):
+            return "⚠️ **사용량 초과**: 잠시 후 다시 시도해주세요."
+         return f"❌ AI 오류: {str(e)}"
+
+# 졸업 요건 상담 및 수정 함수
+def chat_with_graduation_ai(current_analysis, user_input):
+    llm = get_llm()
+    def _execute():
+        template = """
+        당신은 광운대학교 학사 전문 AI 상담사입니다.
+        현재 학생의 졸업 요건 진단 결과는 다음과 같습니다:
+        
+        [현재 진단 결과]
+        {current_analysis}
+
+        [사용자 입력]
+        "{user_input}"
+
+        [지시사항]
+        사용자의 입력 의도를 파악해서 적절히 응답하세요.
+        
+        **Case 1. 단순 질문인 경우 (예: "MSC 필수가 뭐야?"):**
+        - 진단 결과나 학사 규정에 대해 설명해주세요.
+        - 친절하게 답변하세요.
+        
+        **Case 2. 정보 수정/추가인 경우 (예: "나 캡스톤디자인 2023년에 들었어", "공학인증 포기했어"):**
+        - 사용자의 정보를 반영하여 **진단 결과를 재작성**하세요.
+        - 수정된 진단 리포트를 출력할 때는 반드시 맨 앞에 `[수정]` 태그를 붙이세요.
+        - 기존 리포트 형식을 유지하면서 내용을 업데이트하세요.
+        
+        [참고 문헌 (학칙 등)]
+        {context}
+        """
+        prompt = PromptTemplate(template=template, input_variables=["current_analysis", "user_input", "context"])
+        chain = prompt | llm
+        return chain.invoke({
+            "current_analysis": current_analysis,
+            "user_input": user_input,
+            "context": PRE_LEARNED_DATA
+        }).content
+
+    try:
+        return run_with_retry(_execute)
     except Exception as e:
         if "RESOURCE_EXHAUSTED" in str(e):
             return "⚠️ **사용량 초과**: 잠시 후 다시 시도해주세요."
@@ -287,9 +421,9 @@ with st.sidebar:
     else:
         st.error("⚠️ 데이터 폴더에 PDF 파일이 없습니다.")
 
-menu = st.radio("기능 선택", ["🤖 AI 학사 지식인", "📅 스마트 시간표(수정가능)"], 
+menu = st.radio("기능 선택", ["🤖 AI 학사 지식인", "📅 스마트 시간표(수정가능)", "🎓 졸업 요건 진단"], 
                 horizontal=True, key="menu_radio", 
-                index=["🤖 AI 학사 지식인", "📅 스마트 시간표(수정가능)"].index(st.session_state.current_menu))
+                index=["🤖 AI 학사 지식인", "📅 스마트 시간표(수정가능)", "🎓 졸업 요건 진단"].index(st.session_state.current_menu))
 
 if menu != st.session_state.current_menu:
     st.session_state.current_menu = menu
@@ -382,7 +516,7 @@ elif st.session_state.current_menu == "📅 스마트 시간표(수정가능)":
         st.caption("시간표에 대해 질문하거나(Q&A), 수정을 요청(Refine)하세요.")
         for msg in st.session_state.timetable_chat_history:
             with st.chat_message(msg["role"]):
-                st.rkdown(msg["content"], unsafe_allow_html=True)
+                st.markdown(msg["content"], unsafe_allow_html=True)
 
         if chat_input := st.chat_input("예: 1교시 빼줘, 또는 대학수학1 꼭 들어야 해?"):
             st.session_state.timetable_chat_history.append({"role": "user", "content": chat_input})
@@ -391,7 +525,7 @@ elif st.session_state.current_menu == "📅 스마트 시간표(수정가능)":
                 st.write(chat_input)
             with st.chat_message("assistant"):
                 with st.spinner("분석 중..."):
-                    # [수정됨] 함수 호출 시 필요한 변수들(major, grade, semester) 전달
+                    # [복구됨] 함수 호출 시 필요한 인자들을 모두 전달
                     response = chat_with_timetable_ai(st.session_state.timetable_result, chat_input, major, grade, semester)
                     if "[수정]" in response:
                         new_timetable = response.replace("[수정]", "").strip()
@@ -409,113 +543,61 @@ elif st.session_state.current_menu == "📅 스마트 시간표(수정가능)":
                         st.markdown(clean_response)
                         st.session_state.timetable_chat_history.append({"role": "assistant", "content": clean_response})
 
-import streamlit as st
-import pandas as pd
-import os
-import glob
-import datetime
-import time
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain_core.prompts import PromptTemplate
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
+elif st.session_state.current_menu == "🎓 졸업 요건 진단":
+    st.subheader("🎓 졸업 요건 자가 진단")
+    st.markdown("""
+    **취득 학점 내역을 캡처해서 업로드하세요!** AI가 학습된 학사 데이터를 기반으로 졸업 요건을 진단해 드립니다.
+    - KLAS 또는 학교 포털의 성적/학점 조회 화면을 캡처해주세요.
+    - 전체 내역이 보이도록 여러 장으로 나누어 업로드해도 괜찮습니다.
+    """)
 
-# [0] 설정 및 API 로드
-st.set_page_config(page_title="KW-강의마스터 Pro", page_icon="🎓", layout="wide")
+    uploaded_files = st.file_uploader("캡처 이미지 업로드 (여러 장 가능)", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
-# API Key 로드 (Streamlit Secrets 우선 사용)
-api_key = st.secrets.get("GOOGLE_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if uploaded_files:
+        if st.button("졸업 요건 분석 시작 🚀", type="primary"):
+            with st.spinner("이미지를 분석하고 학사 데이터와 대조 중입니다... (시간이 조금 걸릴 수 있습니다)"):
+                analysis_result = analyze_graduation_requirements(uploaded_files)
+                st.session_state.graduation_analysis_result = analysis_result
+                st.session_state.graduation_chat_history = [] # 새 분석 시 채팅 초기화
+                add_log("user", "[졸업 요건] 이미지 분석 요청", "🎓 졸업 요건 진단")
+                st.rerun()
 
-if not api_key:
-    st.error("🚨 Google API Key가 없습니다. Secrets나 환경변수를 확인해주세요.")
-    st.stop()
+    if st.session_state.graduation_analysis_result:
+        st.divider()
+        st.markdown("### 📊 분석 결과")
+        st.markdown(st.session_state.graduation_analysis_result)
+        
+        st.divider()
+        st.subheader("💬 결과 상담 및 수정")
+        st.caption("분석 결과에 대해 궁금한 점을 묻거나, 누락된 정보를 알려주세요. (예: '영어 교양 들었는데 빠졌어', '졸업작품 면제야')")
 
-# [1] 팀원 A: PDF 전처리 및 Vector DB 구축 (RAG)
-@st.cache_resource(show_spinner="116페이지의 광운대 데이터를 정밀 분석 중입니다...")
-def build_vector_db():
-    if not os.path.exists("data"):
-        os.makedirs("data")
-        return None
-    
-    pdf_files = glob.glob("data/*.pdf")
-    if not pdf_files:
-        return None
+        for msg in st.session_state.graduation_chat_history:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
 
-    all_pages = []
-    for pdf_file in pdf_files:
-        try:
-            loader = PyPDFLoader(pdf_file)
-            pages = loader.load_and_split()
-            all_pages.extend(pages)
-        except Exception as e:
-            st.warning(f"⚠️ {os.path.basename(pdf_file)} 로드 실패: {e}")
+        if chat_input := st.chat_input("질문이나 추가 정보를 입력하세요"):
+            st.session_state.graduation_chat_history.append({"role": "user", "content": chat_input})
+            add_log("user", f"[졸업상담] {chat_input}", "🎓 졸업 요건 진단")
+            with st.chat_message("user"):
+                st.write(chat_input)
+            
+            with st.chat_message("assistant"):
+                with st.spinner("분석 중..."):
+                    response = chat_with_graduation_ai(st.session_state.graduation_analysis_result, chat_input)
+                    
+                    if "[수정]" in response:
+                        new_result = response.replace("[수정]", "").strip()
+                        st.session_state.graduation_analysis_result = new_result
+                        st.markdown(new_result)
+                        success_msg = "정보를 반영하여 진단 결과를 업데이트했습니다. 위쪽 리포트를 확인해주세요."
+                        st.session_state.graduation_chat_history.append({"role": "assistant", "content": success_msg})
+                        st.rerun()
+                    else:
+                        st.markdown(response)
+                        st.session_state.graduation_chat_history.append({"role": "assistant", "content": response})
 
-    if not all_pages: return None
-
-    # 텍스트 조각화 (116페이지의 방대한 규정을 1000자씩 나눔)
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    docs = text_splitter.split_documents(all_pages)
-
-    # 임베딩 (Google API 사용)
-    embeddings = GoogleGenerativeAIEmbeddings(model="embedding-004", google_api_key=api_key)
-    return FAISS.from_documents(docs, embeddings)
-
-# build_vector_db 함수 내부의 embeddings 설정을 이렇게 수정하세요
-
-
-# 벡터 DB 초기화
-VECTOR_DB = build_vector_db()
-
-def get_relevant_context(query, k=5):
-    if VECTOR_DB is None: return "학습된 데이터가 없습니다."
-    related_docs = VECTOR_DB.similarity_search(query, k=k)
-    return "\n\n".join([doc.page_content for doc in related_docs])
-
-# [2] 팀원 B: AI 답변 생성 엔진
-def get_llm():
-    return ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=api_key, temperature=0)
-
-def ask_ai(question):
-    llm = get_llm()
-    context = get_relevant_context(question) # RAG 적용: 관련 정보만 추출
-    
-    prompt = PromptTemplate.from_template(
-        "당신은 광운대 학사 가이드 전문가입니다. 아래 문서 내용을 바탕으로 답변하세요.\n\n"
-        "관련 문서 내용:\n{context}\n\n"
-        "질문: {question}\n\n"
-        "반드시 문서에 근거하여 답변하고, 관련 규정 페이지가 있다면 언급하세요."
-    )
-    
-    chain = prompt | llm
-    return chain.invoke({"context": context, "question": question}).content
-
-# [3] 메인 화면 구성
-st.title("🎓 KW-강의마스터 Pro")
-st.info("광운대 학사 규정(116페이지)을 AI가 학습하여 정확한 답변을 제공합니다.")
-
-user_input = st.text_input("궁금한 학사 규정을 물어보세요! (예: 졸업 이수 학점이 뭐야?)")
-
-if user_input:
-    with st.spinner("전문 에이전트가 분석 중..."):
-        answer = ask_ai(user_input)
-        st.markdown("### 🤖 AI 답변")
-        st.markdown(answer)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        if st.button("결과 초기화"):
+            st.session_state.graduation_analysis_result = ""
+            st.session_state.graduation_chat_history = []
+            st.rerun()
 
