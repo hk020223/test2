@@ -458,7 +458,7 @@ def build_vector_db():
     docs = text_splitter.split_documents(all_pages)
 
     # 임베딩 (Google API 사용)
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key)
+    embeddings = GoogleGenerativeAIEmbeddings(model="embedding-001", google_api_key=api_key)
     return FAISS.from_documents(docs, embeddings)
 
 # 벡터 DB 초기화
@@ -498,6 +498,7 @@ if user_input:
         answer = ask_ai(user_input)
         st.markdown("### 🤖 AI 답변")
         st.markdown(answer)
+
 
 
 
