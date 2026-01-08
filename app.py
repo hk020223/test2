@@ -620,33 +620,25 @@ def get_relevant_context(query, k=5):
 
     return "\n\n".join([doc.page_content for doc in related_docs])
 
-    def ask_ai(question):
-
-    llm = get_llm()
-
-    if not llm: return "⚠️ API Key 오류"
-
+def ask_ai(question):
+    # 623번 라인: 여기서부터는 '스페이스바 4번' 또는 'Tab 1번' 들여쓰기가 필수입니다.
+    llm = get_llm() 
+    if not llm: 
+        return "⚠️ API Key 오류"
     
-
-    # 116페이지 전체가 아니라 질문과 관련된 조각만 추출!
-
-    context = get_relevant_context(question)
-
+    # [팀원 A의 전처리 결과물 활용] 
+    # 116페이지의 방대한 자료 중 질문과 관련된 정보만 검색해 옵니다.
+    context = get_relevant_context(question) 
     
-
     def _execute():
-
-        chain = PromptTemplate.from_template(
-
-            "관련 문서 내용:\n{context}\n\n질문: {question}\n근거를 명확히 인용해서 답변해줘."
-
-        ) | llm
-
+        # 이 내부 함수 또한 바깥쪽보다 더 안으로 들여쓰기 되어야 합니다.
+        template = "관련 문서 내용:\n{context}\n\n질문: {question}\n문서에 기반해 근거를 명시하며 답변해줘."
+        prompt = PromptTemplate(template=template, input_variables=["context", "question"])
+        chain = prompt | llm
         return chain.invoke({"context": context, "question": question}).content
-
     
+    return run_with_retry(_execute)
 
-    # ... (리트라이 로직 생략)
 
 
 
