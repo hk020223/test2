@@ -408,7 +408,98 @@ elif st.session_state.current_menu == "📅 스마트 시간표(수정가능)":
                         clean_response = response.replace("[답변]", "").strip()
                         st.markdown(clean_response)
                         st.session_state.timetable_chat_history.append({"role": "assistant", "content": clean_response})
-                        from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter 
+import RecursiveCharacterTextSplitter
+import streamlit as st
+import pandas as pd
+import os
+import glob
+import datetime
+import time
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_core.prompts import PromptTemplate
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+
+# [0] 설정 및 API 로드
+st.set_page_config(page_title="KW-강의마스터 Pro", page_icon="🎓", layout="wide")
+
+# API Key 로드 (Streamlit Secrets 우선 사용)
+api_key = st.secrets.get("GOOGLE_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+
+if not api_key:
+    st.error("🚨 Google API Key가 없습니다. Secrets나 환경변수를 확인해주세요.")
+    st.stop()
+
+# [1] 팀원 A: PDF 전처리 및 Vector DB 구축 (RAG)
+@st.cache_resource(show_spinner="116페이지의 광운대 데이터를 정밀 분석 중입니다...")
+def build_vector_db():
+    if not os.path.exists("data"):
+        os.makedirs("data")
+        return None
+    
+    pdf_files = glob.glob("data/*.pdf")
+    if not pdf_files:
+        return None
+
+    all_pages = []
+    for pdf_file in pdf_files:
+        try:
+            loader = PyPDFLoader(pdf_file)
+            pages = loader.load_and_split()
+            all_pages.extend(pages)
+        except Exception as e:
+            st.warning(f"⚠️ {os.path.basename(pdf_file)} 로드 실패: {e}")
+
+    if not all_pages: return None
+
+    # 텍스트 조각화 (116페이지의 방대한 규정을 1000자씩 나눔)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    docs = text_splitter.split_documents(all_pages)
+
+    # 임베딩 (Google API 사용)
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key)
+    return FAISS.from_documents(docs, embeddings)
+
+# 벡터 DB 초기화
+VECTOR_DB = build_vector_db()
+
+def get_relevant_context(query, k=5):
+    if VECTOR_DB is None: return "학습된 데이터가 없습니다."
+    related_docs = VECTOR_DB.similarity_search(query, k=k)
+    return "\n\n".join([doc.page_content for doc in related_docs])
+
+# [2] 팀원 B: AI 답변 생성 엔진
+def get_llm():
+    return ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=api_key, temperature=0)
+
+def ask_ai(question):
+    llm = get_llm()
+    context = get_relevant_context(question) # RAG 적용: 관련 정보만 추출
+    
+    prompt = PromptTemplate.from_template(
+        "당신은 광운대 학사 가이드 전문가입니다. 아래 문서 내용을 바탕으로 답변하세요.\n\n"
+        "관련 문서 내용:\n{context}\n\n"
+        "질문: {question}\n\n"
+        "반드시 문서에 근거하여 답변하고, 관련 규정 페이지가 있다면 언급하세요."
+    )
+    
+    chain = prompt | llm
+    return chain.invoke({"context": context, "question": question}).content
+
+# [3] 메인 화면 구성
+st.title("🎓 KW-강의마스터 Pro")
+st.info("광운대 학사 규정(116페이지)을 AI가 학습하여 정확한 답변을 제공합니다.")
+
+user_input = st.text_input("궁금한 학사 규정을 물어보세요! (예: 졸업 이수 학점이 뭐야?)")
+
+if user_input:
+    with st.spinner("전문 에이전트가 분석 중..."):
+        answer = ask_ai(user_input)
+        st.markdown("### 🤖 AI 답변")
+        st.markdown(answer)
+
 
 
 
