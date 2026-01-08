@@ -4,3 +4,8 @@ langchain-google-genai
 langchain-community
 langchain-core
 pypdf
+
+langchain
+langchain-text-splitters
+faiss-cpu
+tiktoken
