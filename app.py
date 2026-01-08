@@ -410,6 +410,8 @@ elif st.session_state.current_menu == "📅 스마트 시간표(수정가능)":
                         st.session_state.timetable_chat_history.append({"role": "assistant", "content": clean_response})
                         from langchain.text_splitter import RecursiveCharacterTextSplitter
 
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
 from langchain_community.vectorstores import FAISS
 
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -645,6 +647,9 @@ def get_relevant_context(query, k=5):
     
 
     # ... (리트라이 로직 생략)
+
+
+
 
 
 
