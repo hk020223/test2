@@ -418,7 +418,7 @@ import time
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.prompts import PromptTemplate
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+python from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 
 # [0] 설정 및 API 로드
@@ -498,6 +498,7 @@ if user_input:
         answer = ask_ai(user_input)
         st.markdown("### 🤖 AI 답변")
         st.markdown(answer)
+
 
 
 
