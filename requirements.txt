@@ -8,3 +8,6 @@ langchain
 langchain-text-splitters
 faiss-cpu
 tiktoken
+Pillow
+firebase-admin
+requests
