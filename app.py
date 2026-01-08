@@ -13,6 +13,9 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.messages import HumanMessage
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 # [추가됨] Firebase 라이브러리
 import firebase_admin
@@ -156,29 +159,40 @@ class FirebaseManager:
 
 fb_manager = FirebaseManager()
 
-# PDF 데이터 로드
-@st.cache_resource(show_spinner="PDF 문서를 분석 중입니다...")
-def load_knowledge_base():
-    if not os.path.exists("data"):
-        return ""
+# 1. RAG 엔진 구축: PDF를 쪼개고 벡터화하여 저장
+@st.cache_resource(show_spinner="116페이지의 광운대 데이터를 정밀 분석 중입니다...")
+def build_vector_db():
+    if not os.path.exists("data"): return None
     pdf_files = glob.glob("data/*.pdf")
-    if not pdf_files:
-        return ""
-    all_content = ""
+    if not pdf_files: return None
+
+    all_pages = []
     for pdf_file in pdf_files:
         try:
             loader = PyPDFLoader(pdf_file)
-            pages = loader.load_and_split()
-            filename = os.path.basename(pdf_file)
-            all_content += f"\n\n--- [문서: {filename}] ---\n"
-            for page in pages:
-                all_content += page.page_content
-        except Exception as e:
-            print(f"Error loading {pdf_file}: {e}")
-            continue
-    return all_content
+            all_pages.extend(loader.load_and_split())
+        except Exception: continue
 
-PRE_LEARNED_DATA = load_knowledge_base()
+    if not all_pages: return None
+
+    # 텍스트 조각화 (1000자 단위, 200자 중복)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    docs = text_splitter.split_documents(all_pages)
+
+    # 임베딩 생성 (API 키 명시적 전달로 권한 에러 방지)
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model="models/text-embedding-004", 
+        google_api_key=api_key
+    )
+    return FAISS.from_documents(docs, embeddings)
+
+VECTOR_DB = build_vector_db()
+
+# 2. 검색 함수: 질문과 관련된 문맥만 가져오기 (전체 텍스트 대체)
+def get_relevant_context(query, k=5):
+    if VECTOR_DB is None: return "학습된 데이터가 없습니다."
+    related_docs = VECTOR_DB.similarity_search(query, k=k)
+    return "\n\n".join([doc.page_content for doc in related_docs])
 
 # -----------------------------------------------------------------------------
 # [1] AI 엔진
@@ -195,11 +209,19 @@ def get_pro_llm():
 def ask_ai(question):
     llm = get_llm()
     if not llm: return "⚠️ API Key 오류"
+    
+    # [핵심 수정 1] 질문과 관련된 지식 조각(Context)만 쏙 뽑아옵니다.
+    # 예전처럼 116페이지 전체(PRE_LEARNED_DATA)를 넣지 않습니다!
+    context = get_relevant_context(question)
+    
     def _execute():
         chain = PromptTemplate.from_template(
             "문서 내용: {context}\n질문: {question}\n문서에 기반해 답변해줘. 답변할 때 근거가 되는 문서의 원문 내용을 반드시 \" \" (쌍따옴표) 안에 인용해서 포함해줘."
         ) | llm
-        return chain.invoke({"context": PRE_LEARNED_DATA, "question": question}).content
+        
+        # [핵심 수정 2] PRE_LEARNED_DATA를 지우고 위에서 뽑은 context를 넣습니다.
+        return chain.invoke({"context": context, "question": question}).content
+    
     try:
         return run_with_retry(_execute)
     except Exception as e:
@@ -271,8 +293,13 @@ def generate_timetable_ai(major, grade, semester, target_credits, blocked_times_
         """
         prompt = PromptTemplate(template=template, input_variables=["context", "major", "grade", "semester", "target_credits", "blocked_times", "requirements"])
         chain = prompt | llm
+        # 1. 시간표 짤 때 필요한 정보(전공필수, 졸업요건)만 쏙 뽑아오기 위한 검색어 만들기
+        query = f"{major} {grade} {semester} 전공 필수 과목 및 졸업 요건"
+
+        # 2. 관련 내용 가져오기 (시간표는 정보가 많이 필요하니 k=10 정도로 넉넉하게)
+        context = get_relevant_context(query, k=10)
         input_data = {
-            "context": PRE_LEARNED_DATA,
+            "context": context,
             "major": major,
             "grade": grade,
             "semester": semester,
@@ -326,14 +353,15 @@ def chat_with_timetable_ai(current_timetable, user_input, major, grade, semester
         """
         prompt = PromptTemplate(template=template, input_variables=["current_timetable", "user_input", "major", "grade", "semester", "context"])
         chain = prompt | llm
-        
+
+        context = get_relevant_context(user_input)
         return chain.invoke({
             "current_timetable": current_timetable, 
             "user_input": user_input,
             "major": major,
             "grade": grade,
             "semester": semester,
-            "context": PRE_LEARNED_DATA
+            "context": context
         }).content
     
     try:
@@ -366,7 +394,7 @@ def analyze_graduation_requirements(uploaded_images):
             "type": "image_url",
             "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
         })
-
+    context = get_relevant_context("졸업 이수 학점 및 필수 요건", k=10)
     def _execute():
         prompt = """
         당신은 광운대학교 졸업 요건 분석 전문가입니다.
@@ -414,7 +442,7 @@ def analyze_graduation_requirements(uploaded_images):
         
         content_list = [{"type": "text", "text": prompt}]
         content_list.extend(image_messages)
-        content_list.append({"type": "text", "text": f"\n\n[학습된 학사 문서]\n{PRE_LEARNED_DATA}"})
+        content_list.append({"type": "text", "text":f"\n\n[학습된 학사 문서]\n{context}"})
 
         message = HumanMessage(content=content_list)
         
@@ -459,10 +487,11 @@ def chat_with_graduation_ai(current_analysis, user_input):
         """
         prompt = PromptTemplate(template=template, input_variables=["current_analysis", "user_input", "context"])
         chain = prompt | llm
+        context = get_relevant_context(user_input)
         return chain.invoke({
             "current_analysis": current_analysis,
             "user_input": user_input,
-            "context": PRE_LEARNED_DATA
+            "context": context
         }).content
 
     try:
@@ -520,7 +549,7 @@ with st.sidebar:
                         change_menu(log['menu'])
                         st.rerun()
     st.divider()
-    if PRE_LEARNED_DATA:
+    if VECTOR_DB:
          st.success(f"✅ PDF 문서 학습 완료")
     else:
         st.error("⚠️ 데이터 폴더에 PDF 파일이 없습니다.")
@@ -739,90 +768,6 @@ elif st.session_state.current_menu == "🎓 졸업 요건 진단":
             st.session_state.graduation_chat_history = []
             st.rerun()
 
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain_core.prompts import PromptTemplate
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
-
-# [0] 설정 및 API 로드
-st.set_page_config(page_title="KW-강의마스터 Pro", page_icon="🎓", layout="wide")
-
-# API Key 로드 (Streamlit Secrets 우선 사용)
-api_key = st.secrets.get("GOOGLE_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-
-if not api_key:
-    st.error("🚨 Google API Key가 없습니다. Secrets나 환경변수를 확인해주세요.")
-    st.stop()
-
-# [1] 팀원 A: PDF 전처리 및 Vector DB 구축 (RAG)
-@st.cache_resource(show_spinner="116페이지의 광운대 데이터를 정밀 분석 중입니다...")
-def build_vector_db():
-    if not os.path.exists("data"):
-        os.makedirs("data")
-        return None
-    
-    pdf_files = glob.glob("data/*.pdf")
-    if not pdf_files:
-        return None
-
-    all_pages = []
-    for pdf_file in pdf_files:
-        try:
-            loader = PyPDFLoader(pdf_file)
-            pages = loader.load_and_split()
-            all_pages.extend(pages)
-        except Exception as e:
-            st.warning(f"⚠️ {os.path.basename(pdf_file)} 로드 실패: {e}")
-
-    if not all_pages: return None
-
-    # 텍스트 조각화 (116페이지의 방대한 규정을 1000자씩 나눔)
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    docs = text_splitter.split_documents(all_pages)
-
-    # 임베딩 (Google API 사용)
-    embeddings = GoogleGenerativeAIEmbeddings(model="embedding-004", google_api_key=api_key)
-    return FAISS.from_documents(docs, embeddings)
-
-# build_vector_db 함수 내부의 embeddings 설정을 이렇게 수정하세요
 
 
-# 벡터 DB 초기화
-VECTOR_DB = build_vector_db()
-
-def get_relevant_context(query, k=5):
-    if VECTOR_DB is None: return "학습된 데이터가 없습니다."
-    related_docs = VECTOR_DB.similarity_search(query, k=k)
-    return "\n\n".join([doc.page_content for doc in related_docs])
-
-# [2] 팀원 B: AI 답변 생성 엔진
-def get_llm():
-    return ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=api_key, temperature=0)
-
-def ask_ai(question):
-    llm = get_llm()
-    context = get_relevant_context(question) # RAG 적용: 관련 정보만 추출
-    
-    prompt = PromptTemplate.from_template(
-        "당신은 광운대 학사 가이드 전문가입니다. 아래 문서 내용을 바탕으로 답변하세요.\n\n"
-        "관련 문서 내용:\n{context}\n\n"
-        "질문: {question}\n\n"
-        "반드시 문서에 근거하여 답변하고, 관련 규정 페이지가 있다면 언급하세요."
-    )
-    
-    chain = prompt | llm
-    return chain.invoke({"context": context, "question": question}).content
-
-# [3] 메인 화면 구성
-st.title("🎓 KW-강의마스터 Pro")
-st.info("광운대 학사 규정(116페이지)을 AI가 학습하여 정확한 답변을 제공합니다.")
-
-user_input = st.text_input("궁금한 학사 규정을 물어보세요! (예: 졸업 이수 학점이 뭐야?)")
-
-if user_input:
-    with st.spinner("전문 에이전트가 분석 중..."):
-        answer = ask_ai(user_input)
-        st.markdown("### 🤖 AI 답변")
-        st.markdown(answer)
 
