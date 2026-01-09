@@ -11,3 +11,4 @@ tiktoken
 Pillow
 firebase-admin
 requests
+pymupdf
