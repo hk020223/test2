@@ -158,20 +158,24 @@ class FirebaseManager:
         except:
             return []
 
-fb_manager = FirebaseManager()
-
-# 1. RAG 엔진 구축: PDF를 쪼개고 벡터화하여 저장
-pdf_files = glob.glob("data/*.pdf")
+@st.cache_resource(show_spinner="데이터를 정밀 분석 중입니다... (TXT/PDF)")
+def build_vector_db():
+    if not os.path.exists("data"): return None
+    
+    all_pages = []
+    
+    # 1. PDF 로드 (PyMuPDFLoader 사용)
+    pdf_files = glob.glob("data/*.pdf")
+    # 아래 for 문이 들여쓰기 오류가 났던 부분입니다.
     for pdf_file in pdf_files:
         try:
-            # PyPDFLoader -> PyMuPDFLoader 로 변경
             loader = PyMuPDFLoader(pdf_file)
             all_pages.extend(loader.load_and_split())
         except Exception as e: 
             print(f"PDF 로드 실패: {e}")
             continue
 
-    # 2. TXT 파일 로드 (골든 데이터 지원) - ★ 여기가 중요!
+    # 2. TXT 파일 로드 (골든 데이터)
     txt_files = glob.glob("data/*.txt")
     for txt_file in txt_files:
         try:
@@ -180,14 +184,11 @@ pdf_files = glob.glob("data/*.pdf")
         except Exception as e:
             print(f"TXT 로드 실패: {e}")
             continue
+
     if not all_pages: return None
 
-
-
-
-
-  # 청크 사이즈를 조금 더 키워서 맥락 끊김 방지 (1000 -> 1500)
- text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=300)
+    # 청크 사이즈 설정
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=300)
     docs = text_splitter.split_documents(all_pages)
 
     embeddings = GoogleGenerativeAIEmbeddings(
@@ -195,6 +196,7 @@ pdf_files = glob.glob("data/*.pdf")
         google_api_key=api_key
     )
     return FAISS.from_documents(docs, embeddings)
+    
 VECTOR_DB = build_vector_db()
 
 # 2. 검색 함수: 질문과 관련된 문맥만 가져오기 (전체 텍스트 대체)
@@ -788,6 +790,7 @@ elif st.session_state.current_menu == "🎓 졸업 요건 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
