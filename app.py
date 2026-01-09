@@ -200,7 +200,7 @@ def build_vector_db():
 VECTOR_DB = build_vector_db()
 
 # 2. 검색 함수: 질문과 관련된 문맥만 가져오기 (전체 텍스트 대체)
-def get_relevant_context(query, k=5):
+def get_relevant_context(query, k=20):
     if VECTOR_DB is None: return "학습된 데이터가 없습니다."
     related_docs = VECTOR_DB.similarity_search(query, k=k)
     return "\n\n".join([doc.page_content for doc in related_docs])
@@ -790,6 +790,7 @@ elif st.session_state.current_menu == "🎓 졸업 요건 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
