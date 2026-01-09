@@ -9,6 +9,7 @@ import io
 import json
 import requests
 from PIL import Image
+from langchain_community.document_loaders import PyMuPDFLoader, TextLoader
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
@@ -160,32 +161,40 @@ class FirebaseManager:
 fb_manager = FirebaseManager()
 
 # 1. RAG 엔진 구축: PDF를 쪼개고 벡터화하여 저장
-@st.cache_resource(show_spinner="116페이지의 광운대 데이터를 정밀 분석 중입니다...")
-def build_vector_db():
-    if not os.path.exists("data"): return None
-    pdf_files = glob.glob("data/*.pdf")
-    if not pdf_files: return None
-
-    all_pages = []
+pdf_files = glob.glob("data/*.pdf")
     for pdf_file in pdf_files:
         try:
-            loader = PyPDFLoader(pdf_file)
+            # PyPDFLoader -> PyMuPDFLoader 로 변경
+            loader = PyMuPDFLoader(pdf_file)
             all_pages.extend(loader.load_and_split())
-        except Exception: continue
+        except Exception as e: 
+            print(f"PDF 로드 실패: {e}")
+            continue
 
+    # 2. TXT 파일 로드 (골든 데이터 지원) - ★ 여기가 중요!
+    txt_files = glob.glob("data/*.txt")
+    for txt_file in txt_files:
+        try:
+            loader = TextLoader(txt_file, encoding='utf-8')
+            all_pages.extend(loader.load_and_split())
+        except Exception as e:
+            print(f"TXT 로드 실패: {e}")
+            continue
     if not all_pages: return None
 
-    # 텍스트 조각화 (1000자 단위, 200자 중복)
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+
+
+
+
+  # 청크 사이즈를 조금 더 키워서 맥락 끊김 방지 (1000 -> 1500)
+ text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=300)
     docs = text_splitter.split_documents(all_pages)
 
-    # 임베딩 생성 (API 키 명시적 전달로 권한 에러 방지)
     embeddings = GoogleGenerativeAIEmbeddings(
         model="models/text-embedding-004", 
         google_api_key=api_key
     )
     return FAISS.from_documents(docs, embeddings)
-
 VECTOR_DB = build_vector_db()
 
 # 2. 검색 함수: 질문과 관련된 문맥만 가져오기 (전체 텍스트 대체)
@@ -206,27 +215,39 @@ def get_pro_llm():
     if not api_key: return None
     return ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-09-2025", temperature=0)
 
+# [함수 교체]
 def ask_ai(question):
     llm = get_llm()
     if not llm: return "⚠️ API Key 오류"
     
-    # [핵심 수정 1] 질문과 관련된 지식 조각(Context)만 쏙 뽑아옵니다.
-    # 예전처럼 116페이지 전체(PRE_LEARNED_DATA)를 넣지 않습니다!
     context = get_relevant_context(question)
     
+    # [디버깅] AI가 읽은 내용을 사이드바나 확장영역에 몰래 보여줌 (개발자 확인용)
+    with st.expander("🔍 AI가 참고한 문서 내용 보기 (디버깅용)"):
+        st.write(context)
+    
     def _execute():
-        chain = PromptTemplate.from_template(
-            "문서 내용: {context}\n질문: {question}\n문서에 기반해 답변해줘. 답변할 때 근거가 되는 문서의 원문 내용을 반드시 \" \" (쌍따옴표) 안에 인용해서 포함해줘."
-        ) | llm
+        # 프롬프트 완화: "인용해줘" -> "참고해서 답변해줘" (너무 빡빡하면 답을 안 함)
+        template = """
+        [지시사항]
+        너는 광운대학교 학사 매니저야. 아래 [참고 문서]를 바탕으로 질문에 친절하게 답변해줘.
+        문서에 명확한 답이 없으면 "제공된 문서에는 해당 내용이 없습니다."라고 솔직하게 말해.
         
-        # [핵심 수정 2] PRE_LEARNED_DATA를 지우고 위에서 뽑은 context를 넣습니다.
+        [참고 문서]
+        {context}
+        
+        [질문]
+        {question}
+        """
+        prompt = PromptTemplate(template=template, input_variables=["context", "question"])
+        chain = prompt | llm
         return chain.invoke({"context": context, "question": question}).content
     
     try:
         return run_with_retry(_execute)
     except Exception as e:
         if "RESOURCE_EXHAUSTED" in str(e):
-            return "⚠️ **잠시만요!** 사용량이 많아 AI가 숨을 고르고 있습니다. 1분 뒤에 다시 시도해주세요."
+            return "⚠️ **사용량 초과**: 잠시 후 다시 시도해주세요."
         return f"❌ AI 오류: {str(e)}"
 
 # 공통 프롬프트 지시사항
@@ -767,6 +788,7 @@ elif st.session_state.current_menu == "🎓 졸업 요건 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
