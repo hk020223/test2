@@ -5,7 +5,7 @@ import glob
 import datetime
 import time
 import base64
-import re  # 정규표현식 사용
+import re
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
@@ -1279,6 +1279,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
