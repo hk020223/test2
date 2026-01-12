@@ -275,26 +275,51 @@ class FirebaseManager:
 fb_manager = FirebaseManager()
 
 # PDF 데이터 로드
-@st.cache_resource(show_spinner="PDF 문서를 분석 중입니다...")
+# -----------------------------------------------------------------------------
+# [데이터 로드] PDF -> Text String (날짜 정보 포함 업그레이드)
+# -----------------------------------------------------------------------------
+@st.cache_resource(show_spinner="PDF 문서를 정밀 분석 중입니다...")
 def load_knowledge_base():
     if not os.path.exists("data"):
         return ""
-    pdf_files = glob.glob("data/*.pdf")
-    if not pdf_files:
+    
+    # 1. Processed TXT 파일 확인
+    txt_files = glob.glob("data/processed/*.txt")
+    files_to_load = txt_files if txt_files else glob.glob("data/*.pdf")
+    
+    if not files_to_load:
         return ""
+
     all_content = ""
-    for pdf_file in pdf_files:
+    for file_path in files_to_load:
         try:
-            loader = PyPDFLoader(pdf_file)
-            pages = loader.load_and_split()
-            filename = os.path.basename(pdf_file)
-            all_content += f"\n\n--- [문서: {filename}] ---\n"
-            for page in pages:
-                all_content += page.page_content
+            # [추가됨] 파일의 최종 수정 날짜 추출
+            mod_time = os.path.getmtime(file_path)
+            mod_date = datetime.datetime.fromtimestamp(mod_time).strftime("%Y-%m-%d")
+            filename = os.path.basename(file_path)
+            
+            # 문서 헤더에 날짜 정보 강제 주입
+            header = f"\n\n--- [문서명: {filename} | 업데이트일: {mod_date}] ---\n"
+            
+            content = ""
+            if file_path.endswith(".txt"):
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+            elif file_path.endswith(".pdf"):
+                loader = PyPDFLoader(file_path)
+                pages = loader.load_and_split()
+                for page in pages:
+                    content += page.page_content
+
+            all_content += header + content
+
         except Exception as e:
-            print(f"Error loading {pdf_file}: {e}")
+            print(f"Error loading {file_path}: {e}")
             continue
+            
     return all_content
+
+PRE_LEARNED_DATA = load_knowledge_base()
     # -----------------------------------------------------------------------------
 # [New] 하이브리드 기능을 위한 실시간 데이터 시뮬레이터
 # -----------------------------------------------------------------------------
@@ -1278,4 +1303,5 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
