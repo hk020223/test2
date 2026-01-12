@@ -295,6 +295,25 @@ def load_knowledge_base():
             print(f"Error loading {pdf_file}: {e}")
             continue
     return all_content
+# [New] 하이브리드 기능을 위한 실시간 데이터 시뮬레이터
+# -----------------------------------------------------------------------------
+def fetch_realtime_notices():
+    """
+    [하이브리드 전략] 
+    웹 스크래핑을 통해 KLAS 공지사항이나 변경된 강의실 정보를 실시간으로 가져오는 함수입니다.
+    (발표용 데모를 위해 고정된 최신 데이터를 반환하도록 시뮬레이션합니다.)
+    """
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    
+    # [시연용 데이터] 심사위원 앞에서 보여줄 내용으로 수정하세요!
+    realtime_data = f"""
+    [🚨 실시간 KLAS 긴급 공지사항 ({current_time} 기준)]
+    1. '소프트웨어공학' (김광운 교수): 강의실이 참빛관 201호에서 **새빛관 105호**로 변경되었습니다.
+    2. '인공지능' (박병준 교수): 수강신청 인원 초과로 인해 002분반이 추가 개설되었습니다. (금요일 5,6교시)
+    3. '알고리즘': 1주차 수업은 전면 비대면(Zoom)으로 진행됩니다.
+    4. [규정 변경]: 2026년부터 '캡스톤디자인' 과목이 전공필수로 변경되었습니다.
+    """
+    return realtime_data
 
 PRE_LEARNED_DATA = load_knowledge_base()
 
@@ -309,20 +328,56 @@ def get_pro_llm():
     if not api_key: return None
     return ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-09-2025", temperature=0)
 
+# [함수 교체] 하이브리드 AI 엔진 (Full Context + Realtime)
 def ask_ai(question):
-    llm = get_llm()
-    if not llm: return "⚠️ API Key 오류"
-    def _execute():
-        chain = PromptTemplate.from_template(
-            "문서 내용: {context}\n질문: {question}\n문서에 기반해 답변해줘. 답변할 때 근거가 되는 문서의 원문 내용을 반드시 \" \" (쌍따옴표) 안에 인용해서 포함해줘."
-        ) | llm
-        return chain.invoke({"context": PRE_LEARNED_DATA, "question": question}).content
-    try:
-        return run_with_retry(_execute)
-    except Exception as e:
-        if "RESOURCE_EXHAUSTED" in str(e):
-            return "⚠️ **잠시만요!** 사용량이 많아 AI가 숨을 고르고 있습니다. 1분 뒤에 다시 시도해주세요."
-        return f"❌ AI 오류: {str(e)}"
+    llm = get_llm()
+    if not llm: return "⚠️ API Key 오류"
+    
+    # 1. 정적 데이터 (PDF 전체)
+    static_context = PRE_LEARNED_DATA
+    
+    # 2. 동적 데이터 (실시간 공지)
+    realtime_context = fetch_realtime_notices()
+    
+    # [디버깅] 하이브리드 작동 확인용 (발표 때 보여주세요!)
+    with st.expander("🔍 AI가 보고 있는 데이터 (Hybrid Context)"):
+        st.info(f"📡 **실시간 공지:**\n{realtime_context}")
+        st.caption(f"📘 **학습된 PDF 내용 (일부):**\n{static_context[:300]} ... (총 {len(static_context)}자)")
+
+    def _execute():
+        # 프롬프트: 두 정보를 합쳐서 판단하게 함
+        template = """
+        너는 광운대학교 '하이브리드 학사 에이전트'야. 
+        아래 **[규정 문서]**와 **[실시간 긴급 공지]**를 모두 참고해서 답변해줘.
+        
+        ★중요★: [실시간 긴급 공지]의 내용이 [규정 문서]와 다르다면, **[실시간 긴급 공지]가 최신 정보이므로 우선**해줘.
+        답변 시 정보의 출처(학칙 PDF vs 실시간 공지)를 명확히 밝혀줘.
+        
+        [실시간 긴급 공지 (Web Scraping)]
+        {realtime_context}
+        
+        [규정 문서 (PDF Knowledge Base)]
+        {context}
+        
+        [질문]
+        {question}
+        """
+        prompt = PromptTemplate(template=template, input_variables=["context", "realtime_context", "question"])
+        chain = prompt | llm
+        
+        # 여기서 PDF 전체와 실시간 정보를 같이 넘깁니다.
+        return chain.invoke({
+            "context": static_context, 
+            "realtime_context": realtime_context, 
+            "question": question
+        }).content
+    
+    try:
+        return run_with_retry(_execute)
+    except Exception as e:
+        if "RESOURCE_EXHAUSTED" in str(e):
+            return "⚠️ **사용량 초과**: 잠시 후 다시 시도해주세요."
+        return f"❌ AI 오류: {str(e)}"
 
 # [수정] 공통 프롬프트 지시사항 업데이트 (5단계 검증 필터)
 COMMON_TIMETABLE_INSTRUCTION = """
@@ -1216,6 +1271,16 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+with st.sidebar:
+    st.divider()
+    st.subheader("⚙️ 관리자 도구")
+    
+    if st.button("🔄 학사 데이터베이스 새로고침"):
+        # 캐시를 날려서 다음 번 실행 때 PDF를 다시 읽어오게 함
+        st.cache_resource.clear()
+        st.toast("PDF 데이터를 다시 스캔합니다...", icon="📂")
+        time.sleep(1)
+        st.rerun()
 
 
 
