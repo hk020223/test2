@@ -295,28 +295,26 @@ def load_knowledge_base():
             print(f"Error loading {pdf_file}: {e}")
             continue
     return all_content
-# [New] 하이브리드 기능을 위한 실시간 데이터 시뮬레이터
+
+PRE_LEARNED_DATA = load_knowledge_base()
+
+[New] 하이브리드 기능을 위한 실시간 데이터 시뮬레이터 (추가할 부분)
 # -----------------------------------------------------------------------------
 def fetch_realtime_notices():
     """
-    [하이브리드 전략] 
-    웹 스크래핑을 통해 KLAS 공지사항이나 변경된 강의실 정보를 실시간으로 가져오는 함수입니다.
-    (발표용 데모를 위해 고정된 최신 데이터를 반환하도록 시뮬레이션합니다.)
+    웹 스크래핑을 통해 KLAS 공지사항이나 변경된 강의실 정보를 실시간으로 가져오는 척하는 함수입니다.
     """
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     
     # [시연용 데이터] 심사위원 앞에서 보여줄 내용으로 수정하세요!
     realtime_data = f"""
     [🚨 실시간 KLAS 긴급 공지사항 ({current_time} 기준)]
-    1. '소프트웨어공학' (김광운 교수): 강의실이 참빛관 201호에서 **새빛관 105호**로 변경되었습니다.
-    2. '인공지능' (박병준 교수): 수강신청 인원 초과로 인해 002분반이 추가 개설되었습니다. (금요일 5,6교시)
-    3. '알고리즘': 1주차 수업은 전면 비대면(Zoom)으로 진행됩니다.
-    4. [규정 변경]: 2026년부터 '캡스톤디자인' 과목이 전공필수로 변경되었습니다.
+    1. '소프트웨어공학' (김광운 교수): 이번 학기 강의실이 참빛관 201호에서 **새빛관 105호**로 변경되었습니다.
+    2. '인공지능' (박병준 교수): 수강신청 인원 초과로 인해 분반이 추가되었습니다. (002분반 신설)
+    3. '알고리즘': 1주차 수업은 비대면 줌(Zoom)으로 진행됩니다. 링크는 KLAS 참조.
+    4. 졸업요건 변경: 2026학년도부터 '산학협력캡스톤' 과목이 전공필수로 지정되었습니다.
     """
     return realtime_data
-
-PRE_LEARNED_DATA = load_knowledge_base()
-
 # -----------------------------------------------------------------------------
 # [1] AI 엔진 (gemini-2.5-flash-preview-09-2025)
 # -----------------------------------------------------------------------------
@@ -328,7 +326,7 @@ def get_pro_llm():
     if not api_key: return None
     return ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-09-2025", temperature=0)
 
-# [함수 교체] 하이브리드 AI 엔진 (Full Context + Realtime)
+# [하이브리드 AI 엔진으로 교체]
 def ask_ai(question):
     llm = get_llm()
     if not llm: return "⚠️ API Key 오류"
@@ -336,11 +334,11 @@ def ask_ai(question):
     # 1. 정적 데이터 (PDF 전체)
     static_context = PRE_LEARNED_DATA
     
-    # 2. 동적 데이터 (실시간 공지)
+    # 2. 동적 데이터 (실시간 공지함수 호출)
     realtime_context = fetch_realtime_notices()
     
-    # [디버깅] 하이브리드 작동 확인용 (발표 때 보여주세요!)
-    with st.expander("🔍 AI가 보고 있는 데이터 (Hybrid Context)"):
+    # [디버깅] AI가 참고하는 데이터를 화면에 살짝 보여줌 (발표용)
+    with st.expander("🔍 AI의 사고 과정 (Hybrid Context)"):
         st.info(f"📡 **실시간 공지:**\n{realtime_context}")
         st.caption(f"📘 **학습된 PDF 내용 (일부):**\n{static_context[:300]} ... (총 {len(static_context)}자)")
 
@@ -350,7 +348,7 @@ def ask_ai(question):
         너는 광운대학교 '하이브리드 학사 에이전트'야. 
         아래 **[규정 문서]**와 **[실시간 긴급 공지]**를 모두 참고해서 답변해줘.
         
-        ★중요★: [실시간 긴급 공지]의 내용이 [규정 문서]와 다르다면, **[실시간 긴급 공지]가 최신 정보이므로 우선**해줘.
+        ★중요★: [실시간 긴급 공지]의 내용이 [규정 문서]와 다르면, **[실시간 긴급 공지]가 최신 정보이므로 우선**해줘.
         답변 시 정보의 출처(학칙 PDF vs 실시간 공지)를 명확히 밝혀줘.
         
         [실시간 긴급 공지 (Web Scraping)]
@@ -664,6 +662,16 @@ with st.sidebar:
             st.session_state.clear()
             st.session_state["menu_radio"] = "🤖 AI 학사 지식인" 
             st.rerun()
+            # 사이드바 맨 아래에 추가
+    st.divider()
+    st.subheader("⚙️ 관리자 도구")
+    
+    if st.button("🔄 학사 데이터베이스 새로고침"):
+        # 캐시를 날려서 다음 번 실행 때 PDF를 다시 읽어오게 함
+        st.cache_resource.clear()
+        st.toast("PDF 데이터를 다시 스캔합니다...", icon="📂")
+        time.sleep(1)
+        st.rerun()
             
     st.divider()
     st.caption("클릭하면 해당 화면으로 이동합니다.")
@@ -1271,17 +1279,6 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
-with st.sidebar:
-    st.divider()
-    st.subheader("⚙️ 관리자 도구")
-    
-    if st.button("🔄 학사 데이터베이스 새로고침"):
-        # 캐시를 날려서 다음 번 실행 때 PDF를 다시 읽어오게 함
-        st.cache_resource.clear()
-        st.toast("PDF 데이터를 다시 스캔합니다...", icon="📂")
-        time.sleep(1)
-        st.rerun()
-
 
 
 
