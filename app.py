@@ -1029,64 +1029,6 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
-# ▼▼▼ [최종_진짜_수정_v2.py] 파일 맨 아래에 붙여넣으세요 ▼▼▼
-st.markdown("""
-    <style>
-    /* 1. 전체 배경 (기존 유지) */
-    .stApp {
-        background: linear-gradient(180deg, #FFFFFF 0%, #FFF5F7 100%) !important;
-        background-attachment: fixed !important;
-    }
-
-    /* 2. [강력 수정] 하단 영역의 껍데기들을 전부 투명화 (그림자/배경 제거) */
-    [data-testid="stBottom"] {
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-    
-    /* 하단 영역 바로 아래 자식 요소들도 투명하게 */
-    [data-testid="stBottom"] > div {
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    /* 3. [핵심] 입력창 위아래로 생기는 미세한 회색 박스 제거 */
-    .stChatInput {
-        background-color: transparent !important;
-        border: none !important;
-    }
-    
-    /* 입력창을 감싸는 내부 컨테이너까지 투명화 */
-    .stChatInput > div {
-        background-color: transparent !important;
-        border: none !important;
-    }
-
-    /* 4. 진짜 입력칸(Textarea)만 흰색 알약으로 디자인 */
-    .stChatInput textarea {
-        background-color: #FFFFFF !important; /* 여기만 흰색 */
-        border: 2px solid #8A1538 !important; /* 버건디 테두리 */
-        border-radius: 25px !important; /* 둥글게 */
-        box-shadow: 0 4px 10px rgba(138, 21, 56, 0.1) !important;
-        color: #333333 !important;
-    }
-    
-    /* 5. 포커스 시 강조 효과 */
-    .stChatInput textarea:focus {
-        box-shadow: 0 0 0 3px rgba(138, 21, 56, 0.2) !important;
-    }
-
-    /* 6. 전송 버튼 */
-    [data-testid="stChatInputSubmitButton"] {
-        color: #8A1538 !important;
-        background-color: transparent !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 
 
