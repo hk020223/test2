@@ -116,22 +116,7 @@ if selected_function == "💬 AI 학사 지식인":
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # 3-2. 화면 중앙에 '환영 메시지' 표시 (채팅이 없을 때만)
-    if not st.session_state.messages:
-        st.markdown("""
-        <div style="text-align: center; padding: 50px 0; color: #666;">
-            <h3>👋 안녕하세요! 무엇을 도와드릴까요?</h3>
-            <p style="font-size: 14px; color: #888;">
-                졸업 요건, 수강 신청, 복수 전공 등<br>학사 생활에 대해 자유롭게 물어보세요.
-            </p>
-            <div style="margin-top: 20px;">
-                <span style="background: #FFF0F5; color: #8A1538; padding: 5px 10px; border-radius: 15px; font-size: 12px; margin: 0 5px;">#졸업요건</span>
-                <span style="background: #FFF0F5; color: #8A1538; padding: 5px 10px; border-radius: 15px; font-size: 12px; margin: 0 5px;">#장학금신청</span>
-                <span style="background: #FFF0F5; color: #8A1538; padding: 5px 10px; border-radius: 15px; font-size: 12px; margin: 0 5px;">#SW중심대학</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
+   
     # 3-3. 채팅 히스토리 출력
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -1146,6 +1131,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
