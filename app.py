@@ -27,23 +27,24 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. 통합 스타일 설정 (버건디 테마 + 모바일 최적화 + 채팅창 디자인)
+# 2. 통합 스타일 설정 (버건디 테마 + 모바일 최적화 + 채팅창 디자인/정렬 수정)
 def set_style():
     st.markdown("""
         <style>
-        /* [기본 테마] 전체 배경: 은은한 톤 */
+        /* 1. 전체 배경: 화이트 -> 아주 연한 버건디 틴트 */
         .stApp {
-            background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF0F5 100%) !important;
+            background-attachment: fixed !important;
         }
 
-        /* [타이틀] 광운 버건디 색상 적용 */
+        /* 2. 타이틀 색상 */
         h1 {
             color: #8A1538 !important;
             font-family: 'Pretendard', sans-serif;
             font-weight: 800;
         }
-        
-        /* [메뉴] 라디오 버튼 스타일링 (카드 형태) */
+
+        /* 3. 메뉴(라디오 버튼) 스타일 */
         div.row-widget.stRadio > div {
             justify-content: center;
             gap: 15px;
@@ -65,25 +66,78 @@ def set_style():
             color: #8A1538;
         }
 
-        /* [채팅창] 둥글고 버건디색 포커스 */
+        /* 4. [핵심 수정] 채팅 입력창 디자인 및 버튼 정렬 */
+        
+        /* 4-1. 입력창 껍데기 투명화 */
         [data-testid="stChatInput"] {
-            background-color: transparent;
+            background-color: transparent !important;
+            border-color: transparent !important;
         }
-        .stChatInput textarea {
-            background-color: #F8F9FA; 
-            border: 1px solid #E9ECEF;
-            border-radius: 20px; 
-            padding: 12px;
+        [data-testid="stChatInput"] > div {
+            background-color: transparent !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
         }
-        .stChatInput textarea:focus {
-            border-color: #8A1538 !important;
-            box-shadow: 0 0 0 1px #8A1538 !important;
+        
+        /* 4-2. 하단 영역 전체 투명화 */
+        [data-testid="stBottom"] {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
         }
-        [data-testid="stChatInputSubmitButton"] {
-            color: #8A1538;
+        [data-testid="stBottom"] > div {
+            background-color: transparent !important;
         }
 
-        /* [모바일 최적화 및 테이블] */
+        /* 4-3. 입력칸(Textarea) 높이 및 패딩 고정 */
+        textarea[data-testid="stChatInputTextArea"] {
+            background-color: #FFFFFF !important;
+            border: 2px solid #8A1538 !important;
+            border-radius: 30px !important;
+            
+            /* 높이와 패딩을 강제로 맞춰서 버튼 공간 확보 */
+            min-height: 50px !important; 
+            height: 50px !important;
+            padding-top: 12px !important;
+            padding-bottom: 12px !important;
+            padding-right: 50px !important; /* 버튼이 들어갈 오른쪽 공간 확보 */
+            
+            box-shadow: 0 4px 12px rgba(138, 21, 56, 0.1) !important;
+            color: #333333 !important;
+            align-items: center !important;
+        }
+        
+        /* 포커스 효과 */
+        textarea[data-testid="stChatInputTextArea"]:focus {
+            box-shadow: 0 0 0 3px rgba(138, 21, 56, 0.2) !important;
+        }
+
+        /* 4-4. [중요] 전송 버튼(아이콘) 강제 중앙 정렬 */
+        [data-testid="stChatInputSubmitButton"] {
+            background-color: transparent !important;
+            color: #8A1538 !important;
+            
+            /* 절대 위치로 강제 중앙 정렬 */
+            position: absolute !important;
+            top: 50% !important;
+            right: 10px !important;
+            transform: translateY(-50%) !important;
+            
+            border: none !important;
+            height: 40px !important;
+            width: 40px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 99 !important;
+        }
+        
+        [data-testid="stChatInputSubmitButton"] svg {
+            width: 20px !important;
+            height: 20px !important;
+        }
+
+        /* 5. 모바일 최적화 */
         footer { visibility: hidden; }
         @media only screen and (max-width: 600px) {
             .main .block-container {
@@ -1030,4 +1084,5 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
