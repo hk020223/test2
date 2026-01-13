@@ -25,45 +25,47 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. 스타일 설정 (배경 및 폰트)
+# 2. 스타일 설정 (버건디 그라데이션 배경 및 폰트)
 def set_style():
     st.markdown("""
         <style>
-        /* 배경: 광운대 심볼 워터마크 (투명도 조절로 깔끔하게) */
+        /* 전체 배경: 광운대 버건디 그라데이션 */
         .stApp {
-            background-image: linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)), 
-                              url("https://www.kw.ac.kr/ko/img/intro/symbol_ui01.jpg");
-            background-size: 40vh;
-            background-repeat: no-repeat;
-            background-position: center center;
-            background-attachment: fixed;
+            /* 상단에서 하단으로 은은한 버건디 그라데이션 */
+            background: linear-gradient(to bottom, #ffffff 0%, #f8f0f2 100%);
         }
 
-        /* 메인 타이틀 색상 (광운 버건디) */
+        /* 메인 타이틀 색상 (진한 광운 버건디) */
         h1 {
             color: #8A1538 !important;
             font-family: 'Pretendard', sans-serif;
             font-weight: 800;
         }
         
-        /* 라디오 버튼 꾸미기 (선택지 박스 스타일) */
+        /* 라디오 버튼 선택지 스타일 */
         div.row-widget.stRadio > div {
             flex-direction: row;
             gap: 20px;
+            justify-content: center; /* 중앙 정렬 */
         }
-        /* 라디오 버튼 항목 스타일 */
+        /* 선택지 박스 디자인 */
         div.row-widget.stRadio > div[role="radiogroup"] > label {
-            background-color: #F8F9FA;
-            border: 1px solid #E9ECEF;
-            padding: 15px 20px;
-            border-radius: 12px;
+            background-color: #FFFFFF;
+            border: 2px solid #E9ECEF;
+            padding: 15px 25px;
+            border-radius: 15px;
             font-weight: bold;
-            transition: all 0.3s;
+            color: #495057;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
         }
-        /* 마우스 올렸을 때 */
-        div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
+        /* 마우스 호버 및 선택 시 효과 (버건디 강조) */
+        div.row-widget.stRadio > div[role="radiogroup"] > label:hover,
+        div.row-widget.stRadio > div[role="radiogroup"] > label[data-checked="true"] {
             border-color: #8A1538;
-            background-color: #FFF0F5;
+            background-color: #FFF5F7; /* 아주 연한 핑크 배경 */
+            color: #8A1538;
+            box-shadow: 0 4px 8px rgba(138, 21, 56, 0.15);
         }
         </style>
     """, unsafe_allow_html=True)
@@ -72,37 +74,42 @@ set_style()
 
 # --- UI 레이아웃 구성 ---
 
-# 1. 타이틀 및 서브텍스트
-st.title("🦄 Kwangwoon AI Planner")
-st.markdown("##### 광운대학교 학생을 위한 지능형 수강설계 에이전트입니다")
+# 1. 타이틀 및 서브텍스트 (중앙 정렬)
+col_a, col_b, col_c = st.columns([1, 2, 1])
+with col_b:
+    st.title("🦄 Kwangwoon AI Planner")
+st.markdown("<h5 style='text-align: center; color: #555;'>광운대학교 학생을 위한 지능형 수강설계 에이전트입니다</h5>", unsafe_allow_html=True)
 
 st.write("") # 여백 추가
 st.write("")
 
-# 2. 기능 선택 (라디오 버튼)
-st.write("### 기능 선택")
-selected_function = st.radio(
-    "사용할 기능을 선택해주세요",  # 화면에는 숨김 처리됨
-    options=["💬 AI 학사 지식인", "🗓️ 스마트 시간표(수정가능)", "📈 성적 및 진로 진단"],
-    index=0,  # 기본 선택값
-    horizontal=True, # 가로 배치
-    label_visibility="collapsed" # 라벨 숨기기
-)
+# 2. 기능 선택 (라디오 버튼) - 하나만 남기고 중앙 배치
+st.markdown("<h3 style='text-align: center;'>기능 선택</h3>", unsafe_allow_html=True)
+st.write("")
+
+# 라디오 버튼을 중앙에 배치하기 위한 컬럼
+_, col_radio, _ = st.columns([1, 3, 1])
+with col_radio:
+    selected_function = st.radio(
+        "사용할 기능을 선택해주세요",
+        options=["💬 AI 학사 지식인", "🗓️ 스마트 시간표(수정가능)", "📈 성적 및 진로 진단"],
+        index=0,
+        horizontal=True,
+        label_visibility="collapsed"
+    )
 
 st.divider()
 
 # 3. 선택된 기능에 따라 화면 표시 (플레이스홀더)
+# 실제 기능 코드를 이 부분에 넣으시면 됩니다.
 if selected_function == "💬 AI 학사 지식인":
     st.info("🤖 **AI 학사 지식인** 화면입니다. 궁금한 점을 물어보세요!")
-    # 여기에 챗봇 코드 넣기
     
 elif selected_function == "🗓️ 스마트 시간표(수정가능)":
-    st.info("📅 **스마트 시간표** 화면입니다. 시간표를 생성하고 수정하세요.")
-    # 여기에 시간표 코드 넣기
+    st.success("📅 **스마트 시간표** 화면입니다. 시간표를 생성하고 수정하세요.")
     
 elif selected_function == "📈 성적 및 진로 진단":
-    st.info("📊 **성적 및 진로 진단** 화면입니다. 내 성적을 분석합니다.")
-    # 여기에 성적 분석 코드 넣기
+    st.warning("📊 **성적 및 진로 진단** 화면입니다. 내 성적을 분석합니다.")
 
 # -----------------------------------------------------------------------------
 # [0] 설정 및 데이터 로드
@@ -1087,6 +1094,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
