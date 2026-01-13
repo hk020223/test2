@@ -5,14 +5,12 @@ import glob
 import datetime
 import time
 import base64
-import re  # 정규표현식 사용
-import json # JSON 처리를 위한 라이브러리
+import re
+import json
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.messages import HumanMessage
-
-# Firebase 라이브러리 (Admin SDK)
 import firebase_admin
 from firebase_admin import credentials, firestore
 
@@ -22,114 +20,126 @@ from firebase_admin import credentials, firestore
 st.set_page_config(page_title="KW-강의마스터 Pro", page_icon="🦄", layout="wide")
 
 # Session State 초기화
-if "candidate_courses" not in st.session_state:
-    st.session_state.candidate_courses = []
-if "my_schedule" not in st.session_state:
-    st.session_state.my_schedule = []
-if "global_log" not in st.session_state:
-    st.session_state.global_log = [] 
-if "timetable_result" not in st.session_state:
-    st.session_state.timetable_result = "" 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [] 
-if "current_menu" not in st.session_state:
-    st.session_state.current_menu = "🤖 AI 학사 지식인"
-if "menu_radio" not in st.session_state:
-    st.session_state["menu_radio"] = "🤖 AI 학사 지식인"
-if "timetable_chat_history" not in st.session_state:
-    st.session_state.timetable_chat_history = []
-if "graduation_analysis_result" not in st.session_state:
-    st.session_state.graduation_analysis_result = ""
-if "graduation_chat_history" not in st.session_state:
-    st.session_state.graduation_chat_history = []
-if "user" not in st.session_state:
-    st.session_state.user = None
-if "current_timetable_meta" not in st.session_state:
-    st.session_state.current_timetable_meta = {}
-if "selected_syllabus" not in st.session_state:
-    st.session_state.selected_syllabus = None
+if "candidate_courses" not in st.session_state: st.session_state.candidate_courses = []
+if "my_schedule" not in st.session_state: st.session_state.my_schedule = []
+if "global_log" not in st.session_state: st.session_state.global_log = [] 
+if "timetable_result" not in st.session_state: st.session_state.timetable_result = "" 
+if "chat_history" not in st.session_state: st.session_state.chat_history = [] 
+if "current_menu" not in st.session_state: st.session_state.current_menu = "🤖 AI 학사 지식인"
+if "menu_radio" not in st.session_state: st.session_state["menu_radio"] = "🤖 AI 학사 지식인"
+if "timetable_chat_history" not in st.session_state: st.session_state.timetable_chat_history = []
+if "graduation_analysis_result" not in st.session_state: st.session_state.graduation_analysis_result = ""
+if "graduation_chat_history" not in st.session_state: st.session_state.graduation_chat_history = []
+if "user" not in st.session_state: st.session_state.user = None
+if "current_timetable_meta" not in st.session_state: st.session_state.current_timetable_meta = {}
+if "selected_syllabus" not in st.session_state: st.session_state.selected_syllabus = None
 
 def set_style():
     st.markdown("""
         <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         
+        /* [Global Theme: Dark Mode Tech] */
         html, body, [class*="css"] {
             font-family: 'Pretendard', sans-serif !important;
-            color: #333333;
+            color: #EAEAEA !important; /* 기본 텍스트 밝게 */
+            background-color: #1A1B1E !important; /* 전체 배경 어둡게 */
         }
         
-        /* [Background] */
+        /* [Main Background] */
         .stApp {
-            background: linear-gradient(135deg, #F9FAFB 0%, #F3F0F5 100%) !important;
+            background-color: #1A1B1E !important;
+            background-image: radial-gradient(circle at 50% 0%, #2c1a24 0%, #1A1B1E 60%); /* 상단에 은은한 버건디 빛 */
             background-attachment: fixed !important;
         }
         
-        /* [Header] */
+        /* [Header] Neon Tech Style */
         h1.main-title {
-            font-weight: 800; color: #8A1538; font-size: 2.5rem; text-align: center;
-            margin-bottom: 0.2rem; letter-spacing: -1.5px;
-            background: -webkit-linear-gradient(45deg, #8A1538, #C2185B);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-weight: 900; color: #FFFFFF; font-size: 3rem; text-align: center;
+            margin-bottom: 0.2rem; letter-spacing: -1px;
+            text-shadow: 0 0 20px rgba(255, 51, 102, 0.6); /* 네온 글로우 효과 */
         }
+        h1.main-title span { color: #FF3366; } /* KW 부분 강조 */
         p.subtitle {
-            text-align: center; color: #666; font-size: 1.0rem; margin-bottom: 2rem;
+            text-align: center; color: #A0A0A0; font-size: 1.1rem; margin-bottom: 2.5rem; font-weight: 400;
         }
 
-        /* [Sticky Right Column] 핵심: 오른쪽 컬럼 고정 */
-        /* Streamlit의 두 번째 컬럼(div)를 타겟팅하여 스크롤 시 고정되게 함 */
-        div[data-testid="column"]:nth-of-type(2) {
-            position: sticky;
-            top: 60px; /* 상단 여백 */
-            height: fit-content;
-            max-height: 90vh;
-            overflow-y: auto;
-            z-index: 999;
+        /* [Containers & Cards] Dark Surface */
+        [data-testid="stVerticalBlockBorderWrapper"], .stContainer {
+            background-color: #25262B !important;
+            border-radius: 16px !important;
+            border: 1px solid #373A40 !important; /* 어두운 테두리 */
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
+            padding: 25px !important;
         }
-        
-        /* [Compact Card UI] 강의 카드 소형화 */
-        .course-card-compact {
-            background-color: white;
-            border-radius: 8px;
-            padding: 10px 12px;
-            margin-bottom: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            border: 1px solid #eee;
-            transition: transform 0.1s;
-        }
-        .course-card-compact:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-        }
-        .cc-title { font-weight: 700; font-size: 14px; color: #333; }
-        .cc-meta { font-size: 11px; color: #666; margin-top: 2px; }
-        .cc-time { font-size: 11px; color: #8A1538; font-weight: 600; margin-top: 2px; }
 
-        /* [Navigation] */
+        /* [Navigation] Dark Segmented Control */
         div.row-widget.stRadio > div[role="radiogroup"] {
-            background-color: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            padding: 4px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            display: flex; justify-content: center; gap: 6px;
-            border: 1px solid rgba(255,255,255,0.6);
+            background-color: #2C2E33;
+            padding: 6px; border-radius: 12px;
+            border: 1px solid #373A40;
             max-width: 750px; margin: 0 auto;
         }
         div.row-widget.stRadio > div[role="radiogroup"] > label {
-            flex: 1; text-align: center; border-radius: 12px !important;
-            padding: 8px 12px !important; font-weight: 600 !important; font-size: 0.9rem !important;
-            border: none !important; background: transparent !important; color: #888 !important;
-            box-shadow: none !important; margin: 0 !important;
+            color: #888 !important; font-weight: 600 !important;
+            border-radius: 8px !important; transition: all 0.2s;
         }
         div.row-widget.stRadio > div[role="radiogroup"] > label[data-checked="true"] {
-            background: linear-gradient(135deg, #8A1538 0%, #A01B42 100%) !important;
-            color: #FFFFFF !important; box-shadow: 0 2px 8px rgba(138, 21, 56, 0.3) !important;
+            background: #FF3366 !important; /* Electric Pink/Red */
+            color: #FFFFFF !important;
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.4) !important;
+        }
+        div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
+            color: #FF3366 !important;
         }
 
-        /* [Etc] */
-        [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid rgba(0,0,0,0.05); }
-        textarea[data-testid="stChatInputTextArea"] { background-color: rgba(255, 255, 255, 0.6) !important; backdrop-filter: blur(10px); }
+        /* [Sidebar] Dark */
+        [data-testid="stSidebar"] {
+            background-color: #25262B !important;
+            border-right: 1px solid #373A40;
+        }
+
+        /* [Inputs] Dark Inputs */
+        .stTextInput input, .stSelectbox div[data-baseweb="select"], textarea[data-testid="stChatInputTextArea"] {
+            background-color: #1A1B1E !important;
+            color: #EAEAEA !important;
+            border: 1px solid #373A40 !important;
+            border-radius: 12px !important;
+        }
+        textarea[data-testid="stChatInputTextArea"]:focus {
+            border-color: #FF3366 !important;
+            box-shadow: 0 0 10px rgba(255, 51, 102, 0.3) !important;
+        }
+        
+        /* [Buttons] Electric Gradient */
+        button[kind="primary"] {
+            background: linear-gradient(135deg, #FF3366 0%, #C2185B 100%) !important;
+            border: none !important; color: white !important;
+            box-shadow: 0 4px 15px rgba(255, 51, 102, 0.3) !important;
+        }
+        button:hover { transform: translateY(-2px); }
+        
+        /* [Sticky Right Column] 시간표 고정 */
+        div[data-testid="column"]:nth-of-type(2) {
+            position: sticky; top: 60px; height: fit-content; max-height: 90vh; overflow-y: auto; z-index: 99;
+        }
+
+        /* [Compact Card UI] Dark Mode */
+        .course-card-compact {
+            background-color: #2C2E33; /* 어두운 카드 배경 */
+            border-radius: 8px; padding: 12px; margin-bottom: 8px;
+            border: 1px solid #373A40;
+        }
+        .cc-title { font-weight: 700; font-size: 15px; color: #FFFFFF; }
+        .cc-meta { font-size: 12px; color: #A0A0A0; margin-top: 4px; }
+        .cc-time { font-size: 12px; color: #FF3366; font-weight: 600; margin-top: 4px; }
+        
+        /* [Expander & Tabs] Dark Mode */
+        .streamlit-expanderHeader { background-color: #2C2E33 !important; color: #EAEAEA !important; border: 1px solid #373A40 !important; }
+        .stTabs [data-baseweb="tab"] { color: #888; }
+        .stTabs [aria-selected="true"] { color: #FF3366 !important; }
+
+        /* Hide Defaults */
         #MainMenu {visibility: hidden;} footer {visibility: hidden;}
         </style>
     """, unsafe_allow_html=True)
@@ -270,7 +280,7 @@ def ask_ai(question):
     except: return "⚠️ AI 응답 지연"
 
 # -----------------------------------------------------------------------------
-# [기능 로직] 시간표 & 데이터 추출 (로직 수정됨)
+# [기능 로직] 시간표 & 데이터 추출 (다크 모드용 색상 변경)
 # -----------------------------------------------------------------------------
 def check_time_conflict(new_course, current_schedule):
     new_slots = set(new_course.get('time_slots', []))
@@ -284,12 +294,14 @@ def render_interactive_timetable(schedule_list):
     table_grid = {i: {d: None for d in days} for i in range(1, 10)}
     online_courses = []
     
-    # 색상 (진한 파스텔)
+    # [색상 팔레트 수정] 다크 모드에서 잘 보이도록 더 밝고 채도 높은 네온 컬러 적용
     palette = [
-        {"bg": "#FFEBEE", "text": "#C62828"}, {"bg": "#E3F2FD", "text": "#1565C0"},
-        {"bg": "#E8F5E9", "text": "#2E7D32"}, {"bg": "#F3E5F5", "text": "#6A1B9A"},
-        {"bg": "#FFF3E0", "text": "#EF6C00"}, {"bg": "#E0F2F1", "text": "#00695C"},
-        {"bg": "#FCE4EC", "text": "#AD1457"}
+        {"bg": "#FF4081", "text": "#FFFFFF"}, # Pink
+        {"bg": "#7C4DFF", "text": "#FFFFFF"}, # Purple
+        {"bg": "#00E676", "text": "#000000"}, # Green
+        {"bg": "#2979FF", "text": "#FFFFFF"}, # Blue
+        {"bg": "#FFAB00", "text": "#000000"}, # Orange
+        {"bg": "#00B0FF", "text": "#000000"}, # Cyan
     ]
 
     for course in schedule_list:
@@ -305,23 +317,24 @@ def render_interactive_timetable(schedule_list):
             if day in days and 1 <= period <= 9:
                 table_grid[period][day] = {"name": course['name'], "prof": course['professor'], "style": style}
 
-    # HTML (Compact)
+    # HTML (Dark Mode)
     html = """
     <style>
-        .tt-table { width: 100%; border-collapse: separate; border-spacing: 2px; table-layout: fixed; font-family: 'Pretendard'; }
-        .tt-header { color: #888; font-size: 11px; text-align: center; border-bottom: 1px solid #eee; padding: 4px; }
-        .tt-time { color: #aaa; font-size: 10px; text-align: center; height: 40px; }
-        .tt-cell { padding: 0; height: 40px; vertical-align: top; }
+        .tt-table { width: 100%; border-collapse: separate; border-spacing: 3px; table-layout: fixed; font-family: 'Pretendard'; }
+        .tt-header { color: #A0A0A0; font-size: 12px; text-align: center; border-bottom: 1px solid #373A40; padding: 6px; font-weight: 700; }
+        .tt-time { color: #888; font-size: 11px; text-align: center; height: 45px; font-weight: 600;}
+        .tt-cell { padding: 0; height: 45px; vertical-align: top; }
         .tt-card {
             width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center;
-            border-radius: 6px; font-size: 10px; line-height: 1.1; text-align: center; cursor: default;
+            border-radius: 8px; font-size: 11px; line-height: 1.2; text-align: center; cursor: default;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-weight: 600;
         }
-        .tt-name { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .tt-online { margin-top: 10px; font-size: 11px; }
-        .tt-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; margin: 2px; font-weight: 700; font-size: 10px; }
+        .tt-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tt-online { margin-top: 15px; font-size: 12px; color: #A0A0A0; }
+        .tt-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; margin: 3px; font-weight: 700; font-size: 11px; }
     </style>
     <table class="tt-table">
-        <tr><th style="width:20px;"></th><th>MON</th><th>TUE</th><th>WED</th><th>THU</th><th>FRI</th></tr>
+        <tr><th style="width:25px;"></th><th>MON</th><th>TUE</th><th>WED</th><th>THU</th><th>FRI</th></tr>
     """
     for i in range(1, 10):
         html += f"<tr><td class='tt-time'>{i}</td>"
@@ -330,24 +343,22 @@ def render_interactive_timetable(schedule_list):
             if c:
                 html += f"<td class='tt-cell'><div class='tt-card' style='background:{c['style']['bg']}; color:{c['style']['text']};'><span class='tt-name'>{c['name']}</span></div></td>"
             else:
-                html += "<td class='tt-cell' style='border:1px dashed #f5f5f5;'></td>"
+                html += "<td class='tt-cell' style='border:1px dashed #373A40; opacity: 0.3;'></td>"
         html += "</tr>"
     html += "</table>"
     
     if online_courses:
-        html += "<div class='tt-online'><strong>💻 Online/Etc:</strong> "
+        html += "<div class='tt-online'><strong>💻 Online / Other:</strong><br> "
         for c in online_courses:
             s = palette[abs(hash(c['name'])) % len(palette)]
             html += f"<span class='tt-badge' style='background:{s['bg']}; color:{s['text']};'>{c['name']}</span>"
         html += "</div>"
     return html
 
-# [핵심 수정] 교양 과목 로직 완화된 프롬프트
+# [핵심 수정] 교양 과목 로직 (유지)
 def get_course_candidates_json(major, grade, semester, diagnosis_text=""):
     llm = get_llm()
     if not llm: return []
-
-    # 교양 과목에 대한 제약을 명시적으로 해제함
     prompt_template = """
     너는 [대학교 학사 데이터베이스 파서]이다. 
     제공된 [수강신청자료집/시간표 문서]를 분석하여 **{major} {grade} {semester}** 학생이 수강 가능한 **모든 정규 개설 과목**을 JSON 리스트로 추출하라.
@@ -414,7 +425,7 @@ with st.sidebar:
             mode = st.radio("Mode", ["로그인", "회원가입"], horizontal=True, label_visibility="collapsed")
             email = st.text_input("Email", placeholder="example@kw.ac.kr")
             pw = st.text_input("PW", type="password")
-            if st.button("Go", use_container_width=True):
+            if st.button("Go", use_container_width=True, type="primary"):
                 if mode == "로그인": u, e = fb_manager.login(email, pw)
                 else: u, e = fb_manager.signup(email, pw)
                 if u: st.session_state.user = u; st.rerun()
@@ -427,9 +438,9 @@ with st.sidebar:
     if st.button("📡 Data Sync"):
         st.toast("Syncing..."); time.sleep(1); st.cache_resource.clear(); st.rerun()
 
-# 헤더
-st.markdown('<h1 class="main-title">🦄 KW-Master Pro</h1>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle">Digital Campus Agent for Kwangwoon Univ.</p>', unsafe_allow_html=True)
+# 헤더 (Neon Style)
+st.markdown('<h1 class="main-title"><span>KW</span>-Master Pro</h1>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">AI-Powered Academic Agent</p>', unsafe_allow_html=True)
 
 # 메뉴
 menu = st.radio("M", ["🤖 AI 지식인", "📅 스마트 시간표", "📈 성적 진단"], horizontal=True, label_visibility="collapsed", key="menu_radio")
@@ -440,7 +451,7 @@ st.write("")
 with st.container(border=True):
     if st.session_state.current_menu == "🤖 AI 지식인":
         # (지식인 코드 유지)
-        st.subheader("🤖 무엇이든 물어보세요")
+        st.subheader("🤖 Knowledge Base")
         chat_container = st.container(height=500)
         with chat_container:
             for msg in st.session_state.chat_history:
@@ -458,97 +469,85 @@ with st.container(border=True):
         st.subheader("📅 AI Smart Timetable")
         
         # [설정 영역]
-        with st.expander("🛠️ 설정 (학과/학년)", expanded=not bool(st.session_state.candidate_courses)):
+        with st.expander("🛠️ Setup Engine", expanded=not bool(st.session_state.candidate_courses)):
             c1, c2, c3 = st.columns(3)
-            major = c1.selectbox("학과", ["전자공학과", "소프트웨어학부", "컴퓨터정보공학부", "정보융합학부"], key="tt_major")
-            grade = c2.selectbox("학년", ["1학년", "2학년", "3학년", "4학년"], key="tt_grade")
-            semester = c3.selectbox("학기", ["1학기", "2학기"], key="tt_semester")
-            if st.button("🚀 강의 불러오기 (AI Scan)", type="primary", use_container_width=True):
-                with st.spinner("교양 과목 포함 전수 조사 중..."):
+            major = c1.selectbox("Dept.", ["전자공학과", "소프트웨어학부", "컴퓨터정보공학부", "정보융합학부"], key="tt_major")
+            grade = c2.selectbox("Grade", ["1학년", "2학년", "3학년", "4학년"], key="tt_grade")
+            semester = c3.selectbox("Semester", ["1학기", "2학기"], key="tt_semester")
+            if st.button("🚀 Scan Courses", type="primary", use_container_width=True):
+                with st.spinner("Scanning full database (including electives)..."):
                     res = get_course_candidates_json(major, grade, semester)
                     if res: st.session_state.candidate_courses = res; st.session_state.my_schedule = []; st.rerun()
-                    else: st.error("강의를 찾지 못했습니다.")
+                    else: st.error("No courses found.")
 
         # [메인 빌더 UI] - 좌우 분할 및 Sticky 적용
         if st.session_state.candidate_courses:
             st.write("---")
-            # 비율 조정: 왼쪽(리스트) 1.2 : 오른쪽(시간표) 1
             col_left, col_right = st.columns([1.2, 1], gap="medium")
 
             # [좌측] 강의 리스트 (스크롤 가능)
             with col_left:
-                st.markdown("##### 📚 강의 목록")
-                # 탭을 사용하여 분류
-                tab1, tab2, tab3 = st.tabs(["🔥 전공필수", "🏫 전공선택", "🧩 교양/기타"])
+                st.markdown("##### 📚 Course List")
+                tab1, tab2, tab3 = st.tabs(["🔥 Essential", "🏫 Major", "🧩 Elective"])
                 
-                # [Compact Card 렌더링 함수]
+                # [Compact Card 렌더링 함수 (Dark Mode)]
                 def draw_compact_list(course_list, key_prefix, color_border):
-                    # 이미 담은 과목 제외
                     added_ids = [c['name'] for c in st.session_state.my_schedule]
-                    
                     for c in course_list:
                         if c['name'] in added_ids: continue
                         
-                        # 카드 HTML (CSS 클래스 활용)
+                        # 카드 HTML (Dark Mode Colors)
                         card_html = f"""
-                        <div class="course-card-compact" style="border-left: 4px solid {color_border};">
+                        <div class="course-card-compact" style="border-left: 3px solid {color_border};">
                             <div style="display:flex; justify-content:space-between; align-items:start;">
                                 <div>
                                     <div class="cc-title">{c['name']}</div>
                                     <div class="cc-meta">{c['classification']} | {c['credits']}학점 | {c['professor']}</div>
                                 </div>
                                 <div style="text-align:right;">
-                                    <div class="cc-time">{', '.join(c['time_slots']) if c['time_slots'] else '미정'}</div>
+                                    <div class="cc-time" style="color:{color_border};">{', '.join(c['time_slots']) if c['time_slots'] else '미정'}</div>
                                 </div>
                             </div>
                         </div>
                         """
                         st.markdown(card_html, unsafe_allow_html=True)
                         
-                        # 버튼 (작게 배치)
                         b_col1, b_col2 = st.columns([0.85, 0.15])
-                        if b_col2.button("➕", key=f"add_{key_prefix}_{c['id']}", help="시간표에 추가"):
+                        if b_col2.button("➕", key=f"add_{key_prefix}_{c['id']}", help="Add"):
                             cf, cfn = check_time_conflict(c, st.session_state.my_schedule)
-                            if cf: st.toast(f"충돌: {cfn}", icon="🚫")
+                            if cf: st.toast(f"Conflict: {cfn}", icon="🚫")
                             else: st.session_state.my_schedule.append(c); st.rerun()
                 
-                # 데이터 분류
                 must = [c for c in st.session_state.candidate_courses if c.get('priority') == 'High']
                 maj = [c for c in st.session_state.candidate_courses if c.get('priority') == 'Medium']
-                # 교양/기타: Priority가 Normal이거나 나머지는 다 여기로
                 etc = [c for c in st.session_state.candidate_courses if c not in must and c not in maj]
 
-                with tab1: draw_compact_list(must, "must", "#C62828") # Red
-                with tab2: draw_compact_list(maj, "maj", "#1565C0")   # Blue
-                with tab3: draw_compact_list(etc, "etc", "#2E7D32")   # Green (교양 포함)
+                with tab1: draw_compact_list(must, "must", "#FF3366") # Neon Pink
+                with tab2: draw_compact_list(maj, "maj", "#2979FF")   # Neon Blue
+                with tab3: draw_compact_list(etc, "etc", "#00E676")   # Neon Green
 
             # [우측] 내 시간표 (Sticky 고정됨)
             with col_right:
-                st.markdown("##### 🗓️ 내 시간표")
-                
-                # 미니 대시보드
+                st.markdown("##### 🗓️ My Schedule")
                 total_cr = sum([c['credits'] for c in st.session_state.my_schedule])
-                st.caption(f"신청 학점: {total_cr}학점")
+                st.caption(f"Total Credits: {total_cr}")
                 
-                # 삭제 버튼들 (Pill 형태)
                 if st.session_state.my_schedule:
-                    st.write("담은 과목 (클릭 삭제):")
+                    st.write("Selected:")
                     cols = st.columns(3)
                     for i, c in enumerate(st.session_state.my_schedule):
                         if cols[i%3].button(f"✕ {c['name']}", key=f"del_{i}"):
                             st.session_state.my_schedule.pop(i); st.rerun()
                 
-                # 시간표 렌더링
                 html_tt = render_interactive_timetable(st.session_state.my_schedule)
                 st.markdown(html_tt, unsafe_allow_html=True)
                 
-                # 저장/초기화
                 c1, c2 = st.columns(2)
-                if c1.button("💾 저장", use_container_width=True, type="primary"):
-                    st.toast("저장되었습니다! (데모)", icon="✅")
-                if c2.button("🔄 초기화", use_container_width=True):
+                if c1.button("💾 Save", use_container_width=True, type="primary"):
+                    st.toast("Saved (Demo)", icon="✅")
+                if c2.button("🔄 Reset", use_container_width=True):
                     st.session_state.my_schedule = []; st.rerun()
 
     elif st.session_state.current_menu == "📈 성적 진단":
-        st.subheader("📈 성적 및 진로 진단")
-        st.info("준비 중입니다.")
+        st.subheader("📈 Career Diagnosis")
+        st.info("Coming Soon in Pro Version.")
