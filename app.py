@@ -17,63 +17,86 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 
-# 페이지 기본 설정 (가장 위에 있어야 함)
+# 페이지 설정
 st.set_page_config(
     page_title="KW-Plan: AI 학사 설계",
-    page_icon="🎓",
+    page_icon="🦄",  # 아이콘도 말(Pegasus) 느낌으로 변경
     layout="wide"
 )
 
 def set_style():
     st.markdown("""
         <style>
-        /* 1. 배경 설정 (광운대 로고 + 은은한 그라데이션) */
+        /* 1. 배경: 광운대 비마(Pegasus) 심볼 워터마크 처리 */
         .stApp {
-            /* 배경 이미지 URL (광운대 UI 심볼) */
-            background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
+            /* 비마 심볼 이미지 URL */
+            background-image: linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)), 
                               url("https://www.kw.ac.kr/ko/img/intro/symbol_ui01.jpg");
-            background-size: cover;
-            background-position: center;
+            background-size: 50vh; /* 로고 크기 조절 (화면 높이의 50%) */
+            background-repeat: no-repeat;
+            background-position: center center; /* 중앙 정렬 */
             background-attachment: fixed;
         }
 
-        /* 2. 사이드바 스타일 (버건디 그라데이션) */
-        [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #F8F9FA 0%, #E9ECEF 100%);
-            border-right: 1px solid #ddd;
-        }
-        
-        /* 3. 헤더/폰트 스타일 */
-        h1, h2, h3 {
-            color: #8A1538 !important; /* 광운 버건디 */
+        /* 2. 메인 헤더 스타일 (깔끔한 버건디) */
+        h1 {
+            color: #8A1538 !important;
             font-family: 'Pretendard', sans-serif;
-            font-weight: 700;
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1); /* 약간의 그림자로 입체감 */
         }
         
-        /* 4. 깔쌈한 버튼 스타일 (그림자 + 둥근 모서리) */
+        /* 3. 사이드바 (그라데이션 제거하고 깔끔한 화이트/그레이 톤으로) */
+        [data-testid="stSidebar"] {
+            background-color: #F8F9FA;
+            border-right: 1px solid #E9ECEF;
+        }
+
+        /* 4. 버튼 스타일 (세련된 버건디 그라데이션 + 둥근 모서리) */
         .stButton > button {
             width: 100%;
-            background: linear-gradient(to right, #8A1538, #5c0d25);
+            background: linear-gradient(135deg, #8A1538 0%, #5F0E26 100%); /* 대각선 그라데이션 */
             color: white;
-            border-radius: 10px;
+            border-radius: 12px;
             border: none;
-            padding: 10px 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            font-weight: bold;
+            padding: 12px 20px;
+            font-weight: 600;
+            box-shadow: 0 4px 10px rgba(138, 21, 56, 0.2);
             transition: all 0.3s ease;
         }
         .stButton > button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(138, 21, 56, 0.3);
+            box-shadow: 0 6px 15px rgba(138, 21, 56, 0.4);
         }
 
-        /* 5. 입력창 포커스 색상 변경 */
-        input:focus, textarea:focus, select:focus {
+        /* 5. 입력창 및 선택 박스 강조 */
+        .stTextInput > div > div > input, .stSelectbox > div > div > div {
+            border-radius: 8px;
+        }
+        input:focus, div[data-baseweb="select"]:focus-within {
             border-color: #8A1538 !important;
-            box-shadow: 0 0 0 1px #8A1538 !important;
+            box-shadow: 0 0 0 2px rgba(138, 21, 56, 0.2) !important;
         }
         </style>
     """, unsafe_allow_html=True)
+
+set_style()
+
+# --- UI 구성 ---
+col1, col2 = st.columns([0.8, 0.2])
+with col1:
+    st.title("KW-Plan : AI 학사 설계 에이전트")
+    st.write("광운대학교의 비마(Pegasus)처럼 비상하는 당신의 미래를 설계합니다.")
+with col2:
+    # 우측 상단에 작게 로고 이미지 띄우기 (선택사항)
+    st.image("https://www.kw.ac.kr/ko/img/intro/symbol_ui01.jpg", width=100)
+
+st.divider()
+
+# 간단한 테스트용 버튼
+st.info("💡 **Tip:** 왼쪽 사이드바에서 성적표(PDF)를 업로드하면 분석이 시작됩니다.")
+if st.button("🚀 내 졸업 요건 확인하기"):
+    st.success("분석을 시작합니다...")
 
 # 스타일 적용 함수 호출
 set_style()
@@ -1071,4 +1094,5 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
