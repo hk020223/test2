@@ -16,84 +16,79 @@ from langchain_core.messages import HumanMessage
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-
 import streamlit as st
 
-# 1. 페이지 기본 설정 (가장 상단에 위치)
+# 페이지 기본 설정 (가장 위에 있어야 함)
 st.set_page_config(
     page_title="KW-Plan: AI 학사 설계",
-    page_icon="🦄",  # 광운대 비마(Pegasus)를 상징하는 유니콘 아이콘
+    page_icon="🎓",
     layout="wide"
 )
 
-# 2. 스타일 설정 함수 정의 (CSS 주입)
 def set_style():
     st.markdown("""
         <style>
-        /* 배경: 광운대 비마 심볼 워터마크 + 화이트 오버레이 */
+        /* 1. 배경 설정 (광운대 로고 + 은은한 그라데이션) */
         .stApp {
-            background-image: linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.92)), 
+            /* 배경 이미지 URL (광운대 UI 심볼) */
+            background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
                               url("https://www.kw.ac.kr/ko/img/intro/symbol_ui01.jpg");
-            background-size: 50vh; /* 로고 크기 조절 */
-            background-repeat: no-repeat;
-            background-position: center center;
+            background-size: cover;
+            background-position: center;
             background-attachment: fixed;
         }
 
-        /* 메인 헤더 스타일 (깔끔한 버건디) */
-        h1 {
-            color: #8A1538 !important;
-            font-family: 'Pretendard', sans-serif;
-            font-weight: 800;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        /* 2. 사이드바 스타일 (버건디 그라데이션) */
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #F8F9FA 0%, #E9ECEF 100%);
+            border-right: 1px solid #ddd;
         }
         
-        /* 사이드바 스타일 (깔끔한 화이트/그레이 톤) */
-        [data-testid="stSidebar"] {
-            background-color: #F8F9FA;
-            border-right: 1px solid #E9ECEF;
+        /* 3. 헤더/폰트 스타일 */
+        h1, h2, h3 {
+            color: #8A1538 !important; /* 광운 버건디 */
+            font-family: 'Pretendard', sans-serif;
+            font-weight: 700;
         }
-
-        /* 버튼 스타일 (세련된 버건디 그라데이션 + 둥근 모서리) */
+        
+        /* 4. 깔쌈한 버튼 스타일 (그림자 + 둥근 모서리) */
         .stButton > button {
             width: 100%;
-            background: linear-gradient(135deg, #8A1538 0%, #5F0E26 100%);
+            background: linear-gradient(to right, #8A1538, #5c0d25);
             color: white;
-            border-radius: 12px;
+            border-radius: 10px;
             border: none;
-            padding: 12px 20px;
-            font-weight: 600;
-            box-shadow: 0 4px 10px rgba(138, 21, 56, 0.2);
+            padding: 10px 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-weight: bold;
             transition: all 0.3s ease;
         }
         .stButton > button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(138, 21, 56, 0.4);
+            box-shadow: 0 6px 12px rgba(138, 21, 56, 0.3);
         }
 
-        /* 입력창 포커스 강조 */
-        input:focus, div[data-baseweb="select"]:focus-within {
+        /* 5. 입력창 포커스 색상 변경 */
+        input:focus, textarea:focus, select:focus {
             border-color: #8A1538 !important;
-            box-shadow: 0 0 0 2px rgba(138, 21, 56, 0.2) !important;
+            box-shadow: 0 0 0 1px #8A1538 !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-# 3. 스타일 적용 (한 번만 호출)
+# 스타일 적용 함수 호출
 set_style()
 
-# --- UI 구성 ---
+# --- 여기부터 본문 내용 작성 ---
+st.title("🦅 Kwangwoon AI Planner")
+st.write("광운대학교 학생을 위한 지능형 학사 설계 에이전트입니다.")
 
-# 상단 헤더 및 로고
-col1, col2 = st.columns([0.85, 0.15])
+col1, col2 = st.columns(2)
 with col1:
-    st.title("KW-Plan : AI 학사 설계 에이전트")
-    st.write("광운대학교의 비마(飛馬)처럼 비상하는 당신의 미래를 설계합니다.")
+    st.info("💡 **Smart Advice**\n\nAI가 졸업 요건과 관심 직무를 분석합니다.")
 with col2:
-    # 우측 상단 로고
-    st.image("https://www.kw.ac.kr/ko/img/intro/symbol_ui01.jpg", width=100)
+    st.button("내 학사 설계 시작하기")
 
-st.divider()
 
 # 안내 메시지
 st.info("💡 **Tip:** 왼쪽 사이드바에서 성적표(PDF)를 업로드하면 개인 맞춤형 분석이 시작됩니다.")
@@ -1091,6 +1086,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
