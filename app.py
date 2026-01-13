@@ -24,152 +24,183 @@ st.set_page_config(page_title="KW-강의마스터 Pro", page_icon="🦄", layout
 def set_style():
     st.markdown("""
         <style>
-        /* 0. 폰트 및 기본 설정 (Pretendard 적용) */
+        /* [Import Font] Pretendard - 웹 폰트 표준 */
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         
+        /* [Global Reset] */
         html, body, [class*="css"] {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif !important;
-        }
-
-        /* 1. 전체 배경: 웜 그레이 (눈이 편안함) */
-        .stApp {
-            background-color: #FAFAFA !important;
-        }
-
-        /* 2. 타이틀 스타일링 */
-        h1 {
-            color: #8A1538 !important;
-            font-weight: 800 !important;
-            letter-spacing: -1px !important;
-            margin-bottom: 0.5rem !important;
-        }
-        h2, h3 {
-            color: #2C3E50 !important;
-            font-weight: 700 !important;
-            letter-spacing: -0.5px !important;
+            color: #333333;
         }
         
-        /* 3. Segmented Control (메뉴 라디오 버튼 리뉴얼) */
+        /* [Background] Warm Grey - 눈이 편안한 배경 */
+        .stApp {
+            background-color: #F8F9FA !important;
+        }
+
+        /* [Header Alignment] 중앙 정렬 완벽 보정 */
+        h1.main-title {
+            font-family: 'Pretendard', sans-serif;
+            font-weight: 800;
+            color: #8A1538; /* 광운 버건디 */
+            font-size: 2.8rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            letter-spacing: -1px;
+            text-shadow: 0 2px 4px rgba(138, 21, 56, 0.1);
+        }
+        p.subtitle {
+            text-align: center;
+            color: #6c757d;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            font-weight: 500;
+        }
+
+        /* [Navigation] Floating Segmented Control (Toss Style) */
         div.row-widget.stRadio > div[role="radiogroup"] {
-            background-color: #ffffff;
-            padding: 6px;
-            border-radius: 50px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            background-color: #FFFFFF;
+            padding: 8px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
             display: flex;
-            justify-content: space-between;
-            border: 1px solid #eee;
+            justify-content: center;
+            gap: 10px;
+            border: 1px solid #E9ECEF;
+            max-width: 800px;
+            margin: 0 auto; /* 중앙 정렬 */
         }
         div.row-widget.stRadio > div[role="radiogroup"] > label {
             flex: 1;
             text-align: center;
-            border-radius: 40px !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 10px 20px !important;
-            background: transparent !important;
-            color: #888 !important;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border-radius: 12px !important;
+            padding: 12px 20px !important;
             font-weight: 600 !important;
+            font-size: 1rem !important;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: none !important;
+            background: transparent !important;
+            color: #ADB5BD !important;
+            box-shadow: none !important;
             margin: 0 !important;
         }
-        /* 선택된 항목 스타일 */
         div.row-widget.stRadio > div[role="radiogroup"] > label[data-checked="true"] {
-            background-color: #8A1538 !important;
-            color: white !important;
-            box-shadow: 0 4px 12px rgba(138, 21, 56, 0.3) !important;
-            transform: scale(1.02);
+            background-color: #8A1538 !important; /* Active Color */
+            color: #FFFFFF !important;
+            box-shadow: 0 4px 12px rgba(138, 21, 56, 0.25) !important;
+            transform: translateY(-1px);
         }
         div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
             color: #8A1538 !important;
+            background-color: #FFF5F7 !important;
         }
 
-        /* 4. Soft Shadow Cards (컨테이너 리뉴얼) */
-        /* Streamlit의 border=True 컨테이너를 카드처럼 변신시킴 */
+        /* [Card UI] Soft Shadow Containers */
         [data-testid="stVerticalBlockBorderWrapper"] {
-            border: none !important;
             background-color: #FFFFFF !important;
             border-radius: 24px !important;
-            padding: 24px !important;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.04) !important;
+            border: 1px solid rgba(0,0,0,0.03) !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.03) !important;
+            padding: 30px !important;
+            margin-bottom: 20px;
             transition: transform 0.2s ease;
         }
         
-        /* 5. Glassmorphism Chat Input (하단 채팅창) */
+        /* [Input Field] Glassmorphism Chat */
         [data-testid="stChatInput"] {
-            background: transparent !important;
-        }
-        [data-testid="stBottom"] {
-            background: transparent !important;
             padding-bottom: 20px;
         }
         textarea[data-testid="stChatInputTextArea"] {
-            background-color: rgba(255, 255, 255, 0.85) !important; /* 반투명 */
-            backdrop-filter: blur(12px) !important; /* 유리 효과 */
-            border: 1px solid rgba(138, 21, 56, 0.2) !important;
+            background-color: rgba(255, 255, 255, 0.7) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(138, 21, 56, 0.15) !important;
             border-radius: 30px !important;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05) !important;
+            padding: 15px 20px !important;
+            font-size: 1rem !important;
             color: #333 !important;
-            padding: 15px 50px 15px 20px !important; /* 오른쪽 패딩 확보 */
         }
         textarea[data-testid="stChatInputTextArea"]:focus {
             border-color: #8A1538 !important;
             box-shadow: 0 8px 32px rgba(138, 21, 56, 0.15) !important;
+            background-color: rgba(255, 255, 255, 0.95) !important;
         }
-        /* 전송 버튼 */
         [data-testid="stChatInputSubmitButton"] {
             background: transparent !important;
             color: #8A1538 !important;
-            position: absolute !important;
-            right: 15px !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
             border: none !important;
-        }
-        [data-testid="stChatInputSubmitButton"]:hover {
-            color: #C02E55 !important;
         }
 
-        /* 6. 버튼 스타일링 (Primary) */
-        button[kind="primary"] {
-            background-color: #8A1538 !important;
-            border: none !important;
-            border-radius: 12px !important;
-            padding: 0.5rem 1rem !important;
-            font-weight: 600 !important;
-            box-shadow: 0 4px 12px rgba(138, 21, 56, 0.2) !important;
-            transition: all 0.2s;
+        /* [Sidebar] Dashboard Style */
+        [data-testid="stSidebar"] {
+            background-color: #FFFFFF !important;
+            border-right: 1px solid #F0F0F0;
         }
-        button[kind="primary"]:hover {
-            background-color: #A01B42 !important;
-            box-shadow: 0 6px 16px rgba(138, 21, 56, 0.3) !important;
-            transform: translateY(-2px);
+        [data-testid="stSidebar"] hr {
+            margin: 20px 0;
+            border-color: #F0F0F0;
         }
         
-        /* 7. Toast & Status */
-        .stToast {
-            background-color: white !important;
-            border-left: 6px solid #8A1538 !important;
-            color: #333 !important;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1) !important;
-        }
-
-        /* 8. Expander 깔끔하게 */
-        .streamlit-expanderHeader {
-            background-color: white !important;
+        /* [Buttons] Modern Pill Shape */
+        button {
             border-radius: 12px !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
-            border: 1px solid #f0f0f0 !important;
             font-weight: 600 !important;
+            transition: all 0.2s !important;
+        }
+        button[kind="primary"] {
+            background: linear-gradient(135deg, #8A1538 0%, #68102A 100%) !important;
+            box-shadow: 0 4px 15px rgba(138, 21, 56, 0.3) !important;
+            border: none !important;
+        }
+        button[kind="primary"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(138, 21, 56, 0.4) !important;
+        }
+        button[kind="secondary"] {
+            background-color: #F8F9FA !important;
+            color: #555 !important;
+            border: 1px solid #E9ECEF !important;
         }
 
-        /* 모바일 최적화 */
-        @media only screen and (max-width: 600px) {
-            h1 { font-size: 1.8rem !important; }
-            div.row-widget.stRadio > div[role="radiogroup"] {
-                flex-direction: column;
-                border-radius: 20px;
-            }
+        /* [Expander] Clean Accordion */
+        .streamlit-expanderHeader {
+            background-color: #FFFFFF !important;
+            border-radius: 12px !important;
+            font-weight: 600 !important;
+            color: #333 !important;
+            border: 1px solid #eee !important;
         }
+        
+        /* [Tabs] Minimalist Tabs */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 20px;
+            background-color: transparent;
+            border-bottom: 2px solid #eee;
+        }
+        .stTabs [data-baseweb="tab"] {
+            height: 50px;
+            white-space: pre-wrap;
+            border: none;
+            color: #888;
+            font-weight: 600;
+        }
+        .stTabs [aria-selected="true"] {
+            color: #8A1538 !important;
+            border-bottom: 3px solid #8A1538 !important;
+        }
+
+        /* [Toast] Styling */
+        div[data-baseweb="toast"] {
+            background-color: white !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1) !important;
+            border-radius: 12px !important;
+            border-left: 5px solid #8A1538 !important;
+        }
+        
+        /* Hide default header/footer */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
         </style>
     """, unsafe_allow_html=True)
 
@@ -405,7 +436,7 @@ def ask_ai(question):
         return f"❌ AI 오류: {str(e)}"
 
 # =============================================================================
-# [Helper Functions] 인터랙티브 시간표 & AI 데이터 추출 (Strict Fact-Based)
+# [Helper Functions] 인터랙티브 시간표 & AI 데이터 추출
 # =============================================================================
 
 # 1. 시간 충돌 감지 로직
@@ -421,24 +452,23 @@ def check_time_conflict(new_course, current_schedule):
 # [UI 리뉴얼] 시간표 렌더링 함수 (스티커 모던 디자인)
 def render_interactive_timetable(schedule_list):
     """
-    구글 캘린더 스타일의 현대적인 시간표 렌더링
+    구글 캘린더/애플 캘린더 스타일의 현대적인 시간표 렌더링
     """
     days = ["월", "화", "수", "목", "금"]
     
-    # 1. 그리드 초기화 (텍스트와 배경색을 함께 저장)
+    # 1. 그리드 초기화
     table_grid = {i: {d: None for d in days} for i in range(1, 10)}
     online_courses = []
 
-    # 2. 색상 팔레트 (부드러운 파스텔)
+    # 2. 색상 팔레트 (Modern Pastel)
     palette = [
-        {"bg": "#FFEBEE", "border": "#FFCDD2", "text": "#B71C1C"}, # Red
-        {"bg": "#E3F2FD", "border": "#BBDEFB", "text": "#0D47A1"}, # Blue
-        {"bg": "#E8F5E9", "border": "#C8E6C9", "text": "#1B5E20"}, # Green
-        {"bg": "#F3E5F5", "border": "#E1BEE7", "text": "#4A148C"}, # Purple
-        {"bg": "#FFF3E0", "border": "#FFE0B2", "text": "#E65100"}, # Orange
-        {"bg": "#E0F2F1", "border": "#B2DFDB", "text": "#004D40"}, # Teal
-        {"bg": "#FCE4EC", "border": "#F8BBD0", "text": "#880E4F"}, # Pink
-        {"bg": "#FFF8E1", "border": "#FFECB3", "text": "#FF6F00"}  # Amber
+        {"bg": "#FFEBEE", "border": "#FFCDD2", "text": "#C62828"}, # Red
+        {"bg": "#E3F2FD", "border": "#BBDEFB", "text": "#1565C0"}, # Blue
+        {"bg": "#E8F5E9", "border": "#C8E6C9", "text": "#2E7D32"}, # Green
+        {"bg": "#F3E5F5", "border": "#E1BEE7", "text": "#6A1B9A"}, # Purple
+        {"bg": "#FFF3E0", "border": "#FFE0B2", "text": "#EF6C00"}, # Orange
+        {"bg": "#E0F2F1", "border": "#B2DFDB", "text": "#00695C"}, # Teal
+        {"bg": "#FCE4EC", "border": "#F8BBD0", "text": "#AD1457"}, # Pink
     ]
 
     # 3. 데이터 채우기
@@ -472,31 +502,32 @@ def render_interactive_timetable(schedule_list):
     # 4. 모던 HTML 생성
     html = """
     <style>
-        .tt-table { width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed; }
-        .tt-header { background-color: #f8f9fa; color: #555; padding: 10px; font-weight: bold; border-radius: 8px; text-align: center; font-size: 14px; }
-        .tt-time { background-color: #f8f9fa; color: #888; font-weight: bold; text-align: center; vertical-align: middle; border-radius: 8px; font-size: 12px; height: 50px;}
-        .tt-cell { vertical-align: middle; padding: 0; height: 50px; }
+        .tt-table { width: 100%; border-collapse: separate; border-spacing: 6px; table-layout: fixed; }
+        .tt-header { background-color: transparent; color: #888; padding: 10px; font-weight: 700; text-align: center; font-size: 14px; border-bottom: 2px solid #eee; }
+        .tt-time { color: #aaa; font-weight: 600; text-align: center; vertical-align: middle; font-size: 12px; height: 60px;}
+        .tt-cell { vertical-align: middle; padding: 0; height: 60px; }
         .tt-card {
             width: 100%; height: 100%;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            font-size: 12px; line-height: 1.2; padding: 4px; text-align: center;
-            transition: transform 0.1s;
+            border-radius: 12px; 
+            font-size: 12px; line-height: 1.3; padding: 4px; text-align: center;
+            transition: all 0.2s;
+            cursor: default;
         }
-        .tt-card:hover { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-        .tt-name { font-weight: bold; margin-bottom: 2px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
-        .tt-prof { font-size: 10px; opacity: 0.8; }
-        .tt-online { margin-top: 10px; padding: 10px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; }
-        .tt-online-badge { display: inline-block; margin: 2px; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+        .tt-card:hover { transform: scale(1.05); box-shadow: 0 8px 16px rgba(0,0,0,0.1); z-index: 10; }
+        .tt-name { font-weight: 800; margin-bottom: 2px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 95%; }
+        .tt-prof { font-size: 11px; opacity: 0.9; font-weight: 500; }
+        .tt-online { margin-top: 20px; padding: 15px; background: #fff; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
+        .tt-online-badge { display: inline-block; margin: 4px; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     </style>
     <table class="tt-table">
         <tr>
             <th style="width: 8%;"></th>
-            <th class="tt-header">월</th>
-            <th class="tt-header">화</th>
-            <th class="tt-header">수</th>
-            <th class="tt-header">목</th>
-            <th class="tt-header">금</th>
+            <th class="tt-header">MON</th>
+            <th class="tt-header">TUE</th>
+            <th class="tt-header">WED</th>
+            <th class="tt-header">THU</th>
+            <th class="tt-header">FRI</th>
         </tr>
     """
     
@@ -508,25 +539,25 @@ def render_interactive_timetable(schedule_list):
                 s = cell_data['style']
                 # 카드형 디자인 적용
                 card_html = f"""
-                <div class="tt-card" style="background-color: {s['bg']}; color: {s['text']}; border: 1px solid {s['border']};">
+                <div class="tt-card" style="background-color: {s['bg']}; color: {s['text']};">
                     <span class="tt-name">{cell_data['name']}</span>
                     <span class="tt-prof">{cell_data['prof']}</span>
                 </div>
                 """
                 html += f"<td class='tt-cell'>{card_html}</td>"
             else:
-                # 빈 셀
-                html += "<td class='tt-cell' style='background-color: #fafafa; border-radius: 8px;'></td>"
+                # 빈 셀 (가이드라인)
+                html += "<td class='tt-cell' style='background-color: #fdfdfd; border-radius: 8px; border: 1px dashed #f0f0f0;'></td>"
         html += "</tr>"
     html += "</table>"
 
     # 온라인 강의 표시
     if online_courses:
-        html += "<div class='tt-online'><strong>💻 온라인/시간미정: </strong>"
+        html += "<div class='tt-online'><strong style='color:#555;'>✨ Online / Unscheduled: </strong><br>"
         for c in online_courses:
             color_idx = abs(hash(c['name'])) % len(palette)
             s = palette[color_idx]
-            html += f"<span class='tt-online-badge' style='background-color: {s['bg']}; color: {s['text']}; border: 1px solid {s['border']};'>{c['name']}</span>"
+            html += f"<span class='tt-online-badge' style='background-color: {s['bg']}; color: {s['text']};'>{c['name']}</span>"
         html += "</div>"
         
     return html
@@ -536,7 +567,6 @@ def get_course_candidates_json(major, grade, semester, diagnosis_text=""):
     llm = get_llm()
     if not llm: return []
 
-    # [수정] Career/Recommendation 배제 및 전수 조사 중심 프롬프트
     prompt_template = """
     너는 [대학교 학사 데이터베이스 파서]이다. 
     제공된 [수강신청자료집/시간표 문서]를 분석하여 **{major} {grade} {semester}** 학생이 수강 가능한 **모든 정규 개설 과목**을 JSON 리스트로 추출하라.
@@ -714,7 +744,7 @@ def analyze_graduation_requirements(uploaded_images):
             return "⚠️ **사용량 초과**: 잠시 후 다시 시도해주세요."
          return f"❌ AI 오류: {str(e)}"
 
-# 성적/진로 상담 및 수정 함수 (페르소나 유지)
+# 성적/진로 상담 및 수정 함수
 def chat_with_graduation_ai(current_analysis, user_input):
     llm = get_llm()
     def _execute():
@@ -752,21 +782,23 @@ def chat_with_graduation_ai(current_analysis, user_input):
         return f"❌ AI 오류: {str(e)}"
 
 # -----------------------------------------------------------------------------
-# [2] UI 구성
+# [2] UI 구성 (리뉴얼)
 # -----------------------------------------------------------------------------
 def change_menu(menu_name):
     st.session_state.current_menu = menu_name
 
+# 사이드바 (Dashboard Style)
 with st.sidebar:
-    st.markdown("### 🗂️ 활동 로그", unsafe_allow_html=True)
+    st.markdown("### 🎛️ Control Tower")
+    
     # [로그인 UI]
     if st.session_state.user is None:
-        with st.expander("🔐 로그인 / 회원가입", expanded=True):
-            auth_mode = st.radio("모드 선택", ["로그인", "회원가입"], horizontal=True, key="auth_radio")
-            email = st.text_input("이메일")
-            password = st.text_input("비밀번호", type="password")
+        with st.expander("🔐 Login / Sign Up", expanded=True):
+            auth_mode = st.radio("Mode", ["로그인", "회원가입"], horizontal=True, key="auth_radio", label_visibility="collapsed")
+            email = st.text_input("Email", placeholder="example@kw.ac.kr")
+            password = st.text_input("Password", type="password", placeholder="********")
             
-            if st.button(auth_mode, key="auth_btn", type="primary"):
+            if st.button("Enter", key="auth_btn", type="primary", use_container_width=True):
                 if not email or not password:
                     st.error("이메일과 비밀번호를 입력하세요.")
                 else:
@@ -786,99 +818,107 @@ with st.sidebar:
                             else:
                                 st.error(f"오류: {err}")
     else:
-        st.info(f"👤 **{st.session_state.user['email']}**님")
-        if st.button("로그아웃"):
+        # 로그인된 상태의 프로필 카드
+        st.markdown(f"""
+        <div style="background-color: #F8F9FA; padding: 16px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #E9ECEF;">
+            <div style="font-weight: bold; color: #333; margin-bottom: 4px;">👤 {st.session_state.user['email']}</div>
+            <div style="font-size: 12px; color: #8A1538;">Student Verified</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("로그아웃", use_container_width=True):
             st.session_state.clear()
             st.session_state["menu_radio"] = "🤖 AI 학사 지식인" 
             st.rerun()
     
-    st.markdown("---")
-    st.markdown("##### ⚙️ 시스템 관리자 모드", unsafe_allow_html=True)
+    st.write("") # Whitespace
+    st.markdown("##### ⚙️ Settings")
     
-    if st.button("📡 학교 서버 데이터 동기화 (Auto-Sync)"):
+    if st.button("📡 학교 데이터 동기화 (Sync)", help="최신 학사 정보 업데이트"):
         status_text = st.empty()
         progress_bar = st.progress(0)
-        status_text.text("🔄 광운대 KLAS 서버 접속 중...")
+        status_text.caption("🔄 연결 중...")
         time.sleep(1.0) 
         progress_bar.progress(30)
-        status_text.text("📂 최신 학사 규정 및 시간표 스캔 중... (변경 감지!)")
+        status_text.caption("📂 최신 규정 스캔 중...")
         time.sleep(1.5)
         progress_bar.progress(70)
-        status_text.text("⬇️ 신규 PDF 다운로드 및 벡터 DB 재구축 중...")
         st.cache_resource.clear()
         time.sleep(1.0)
         progress_bar.progress(100)
-        st.success("✅ 동기화 완료! 최신 데이터(2026-01-12 14:30 기준)가 반영되었습니다.")
-        time.sleep(2)
+        st.toast("동기화 완료! 최신 데이터가 반영되었습니다.", icon="✅")
+        time.sleep(1)
         st.rerun()          
-    st.markdown("---")
-    st.caption("클릭하면 해당 화면으로 이동합니다.")
-    log_container = st.container(height=300)
+    
+    st.write("")
+    st.markdown("##### 🕒 Recent Activities")
+    log_container = st.container(height=250)
     with log_container:
         if not st.session_state.global_log:
-            st.info("기록 없음")
+            st.caption("기록 없음")
         else:
             for i, log in enumerate(reversed(st.session_state.global_log)):
-                label = f"[{log['time']}] {log['content'][:15]}..."
+                label = f"[{log['time']}] {log['content'][:12]}.."
                 if st.button(label, key=f"log_btn_{i}", use_container_width=True):
                     if log['menu']:
                         st.session_state.current_menu = log['menu']
                         st.session_state["menu_radio"] = log['menu'] 
                         st.rerun()
-    st.markdown("---")
+
+    st.write("")
     if PRE_LEARNED_DATA:
-         st.success(f"✅ PDF 문서 학습 완료")
+         st.markdown("<div style='font-size:12px; color:#2E7D32; text-align:center;'>✅ KLAS Knowledge Active</div>", unsafe_allow_html=True)
     else:
-        st.error("⚠️ 데이터 폴더에 PDF 파일이 없습니다.")
+        st.error("⚠️ 데이터 없음")
 
 # -----------------------------------------------------------------------------
-# [2] 메인 UI (리뉴얼)
+# [2] 메인 UI (The New Layout)
 # -----------------------------------------------------------------------------
 
-# 1. 상단 헤더 (중앙 정렬 타이틀)
-st.markdown("<h1 style='text-align: center;'>🦄 Kwangwoon AI Planner</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #666; font-size: 16px; margin-bottom: 30px;'>광운대학교 학생을 위한 지능형 수강설계 에이전트</p>", unsafe_allow_html=True)
+# 1. 상단 헤더 (완벽한 중앙 정렬)
+st.markdown('<h1 class="main-title">🦄 KW-Master Pro</h1>', unsafe_allow_html=True)
+st.markdown('<p class="subtitle">Digital Campus Agent for Kwangwoon Univ.</p>', unsafe_allow_html=True)
 
-# 2. 기능 선택 메뉴 (Segmented Control 스타일)
-_, col_center, _ = st.columns([1, 4, 1])
-with col_center:
-    menu = st.radio(
-        "메뉴 선택", # 라벨 숨김 처리됨
-        options=["🤖 AI 학사 지식인", "📅 스마트 시간표(수정가능)", "📈 성적 및 진로 진단"],
-        index=0,
-        horizontal=True,
-        key="menu_radio",
-        label_visibility="collapsed"
-    )
+# 2. 기능 선택 메뉴 (Floating Segmented Control)
+st.write("")
+menu = st.radio(
+    "메뉴 선택", 
+    options=["🤖 AI 학사 지식인", "📅 스마트 시간표(수정가능)", "📈 성적 및 진로 진단"],
+    index=0,
+    horizontal=True,
+    key="menu_radio",
+    label_visibility="collapsed"
+)
 
+# 메뉴 상태 동기화
 if menu != st.session_state.current_menu:
     st.session_state.current_menu = menu
     st.rerun()
 
 st.write("") 
+st.write("") 
 
-# 카드형 컨테이너 안에 메인 콘텐츠 배치
-with st.container(border=True): # CSS가 이 border=True를 Shadow Card로 변환함
+# 메인 콘텐츠 컨테이너 (Shadow Card 적용됨)
+with st.container(border=True):
 
     if st.session_state.current_menu == "🤖 AI 학사 지식인":
         st.subheader("🤖 무엇이든 물어보세요")
         
-        # 상단 도구 모음 (저장/로드)
+        # 상단 도구 모음
         if st.session_state.user and fb_manager.is_initialized:
-            with st.expander("💾 대화 내용 관리"):
-                col_s1, col_s2 = st.columns(2)
-                if col_s1.button("현재 대화 저장", use_container_width=True):
+            col_save, col_load = st.columns([1, 2])
+            with col_save:
+                if st.button("💾 대화 저장", use_container_width=True):
                     doc_id = str(int(time.time()))
                     data = {"history": [msg for msg in st.session_state.chat_history]}
                     if fb_manager.save_data('chat_history', doc_id, data):
-                        st.toast("대화 내용이 저장되었습니다.")
-                
-                saved_chats = fb_manager.load_collection('chat_history')
-                if saved_chats:
-                    selected_chat = col_s2.selectbox("불러오기", saved_chats, format_func=lambda x: datetime.datetime.fromtimestamp(int(x['id'])).strftime('%Y-%m-%d %H:%M'), label_visibility="collapsed")
-                    if col_s2.button("로드", use_container_width=True):
-                        st.session_state.chat_history = selected_chat['history']
-                        st.rerun()
+                        st.toast("저장되었습니다.")
+            with col_load:
+                 saved_chats = fb_manager.load_collection('chat_history')
+                 if saved_chats:
+                     selected = st.selectbox("불러오기", saved_chats, format_func=lambda x: datetime.datetime.fromtimestamp(int(x['id'])).strftime('%m/%d %H:%M'), label_visibility="collapsed")
+                     if st.button("로드", key="load_chat_btn"):
+                         st.session_state.chat_history = selected['history']
+                         st.rerun()
 
         # 대화창 영역
         chat_container = st.container()
@@ -888,28 +928,22 @@ with st.container(border=True): # CSS가 이 border=True를 Shadow Card로 변�
                     st.markdown(msg["content"])
         
         # 입력창 처리
-        if user_input := st.chat_input("광운대 학사, 장학, 수강신청 관련 질문을 입력하세요..."):
+        if user_input := st.chat_input("광운대 학사 규정, 장학금, 수강신청 등 궁금한 점을 입력하세요..."):
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             add_log("user", f"[지식인] {user_input}", "🤖 AI 학사 지식인")
             with st.chat_message("user"):
                 st.markdown(user_input)
             with st.chat_message("assistant"):
-                with st.spinner("답변 생성 중..."):
+                with st.spinner("Analyzing KLAS Documents..."):
                     response = ask_ai(user_input)
                     st.markdown(response)
             st.session_state.chat_history.append({"role": "assistant", "content": response})
 
     elif st.session_state.current_menu == "📅 스마트 시간표(수정가능)":
-        st.subheader("📅 AI 스마트 시간표 빌더")
+        st.subheader("📅 AI Smart Timetable")
         
-        # [상태 초기화]
-        if "candidate_courses" not in st.session_state:
-            st.session_state.candidate_courses = []
-        if "my_schedule" not in st.session_state:
-            st.session_state.my_schedule = []
-
         # [A] 설정 및 후보군 로딩
-        with st.expander("🛠️ 수강신청 설정 (학과/학년 선택)", expanded=not bool(st.session_state.candidate_courses)):
+        with st.expander("🛠️ Configuration (학과/학년 설정)", expanded=not bool(st.session_state.candidate_courses)):
             kw_departments = [
                 "전자공학과", "전자통신공학과", "전자융합공학과", "전기공학과", "전자재료공학과", "반도체시스템공학부", "로봇학부",
                 "컴퓨터정보공학부", "소프트웨어학부", "정보융합학부", "지능형로봇학과", "건축학과", "건축공학과", "화학공학과", "환경공학과",
@@ -925,7 +959,7 @@ with st.container(border=True): # CSS가 이 border=True를 Shadow Card로 변�
             
             use_diagnosis = st.checkbox("☑️ 성적 진단 결과 반영 (재수강/추천 과목 로드)", value=True)
             
-            if st.button("🚀 강의 목록 불러오기 (AI Scan)", type="primary", use_container_width=True):
+            if st.button("🚀 강의 데이터 스캔 (AI Scan)", type="primary", use_container_width=True):
                 diag_text = ""
                 if use_diagnosis and st.session_state.graduation_analysis_result:
                       diag_text = st.session_state.graduation_analysis_result
@@ -947,56 +981,42 @@ with st.container(border=True): # CSS가 이 border=True를 Shadow Card로 변�
         # [B] 인터랙티브 빌더 UI
         if st.session_state.candidate_courses:
             st.write("---")
-            col_left, col_right = st.columns([1, 1.4], gap="medium")
+            col_left, col_right = st.columns([1, 1.4], gap="large")
 
             # [좌측] 강의 장바구니
             with col_left:
-                st.subheader("📚 강의 선택")
+                st.markdown("#### 📚 Courses")
                 st.caption("클릭하여 시간표에 추가하세요.")
                 
-                with st.container(height=600): # 스크롤 가능
+                with st.container(height=650): 
                     tab1, tab2, tab3 = st.tabs(["🔥 필수/재수강", "🏫 전공선택", "🧩 교양/기타"])
                     
                     def draw_course_row(course, key_prefix):
-                        # 이미 담은 과목 숨김
                         current_names = [c['name'] for c in st.session_state.my_schedule]
                         if course['name'] in current_names:
                             return 
 
-                        # 스타일링
                         priority = course.get('priority', 'Normal')
-                        card_bg = "#ffffff"
-                        if priority == 'High': card_bg = "#FFF5F7" # 연한 핑크
-                        elif priority == 'Medium': card_bg = "#F5FBFF" # 연한 블루
+                        card_style = "border-left: 4px solid #eee;"
+                        if priority == 'High': card_style = "border-left: 4px solid #8A1538; background-color: #FFF5F7;"
+                        elif priority == 'Medium': card_style = "border-left: 4px solid #1565C0; background-color: #F5FBFF;"
                         
-                        # 카드 내부 레이아웃
-                        with st.container():
-                            st.markdown(f"""
-                            <div style="background-color:{card_bg}; padding:12px; border-radius:12px; margin-bottom:8px; border:1px solid #eee; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <div>
-                                        <div style="font-weight:bold; color:#333; font-size:15px;">{course['name']}</div>
-                                        <div style="font-size:12px; color:#666;">{course['credits']}학점 | {course['professor']}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                            
-                            # 버튼은 스트림릿 네이티브로 배치 (이벤트 처리를 위해)
-                            c_cols = st.columns([0.8, 0.2])
-                            c_cols[0].caption(f"시간: {', '.join(course['time_slots']) if course['time_slots'] else '미정'}")
-                            if c_cols[1].button("➕", key=f"add_{key_prefix}_{course['id']}"):
-                                conflict, conflict_name = check_time_conflict(course, st.session_state.my_schedule)
-                                if conflict:
-                                    st.toast(f"⚠️ 시간 충돌! '{conflict_name}' 수업과 겹칩니다.", icon="🚫")
-                                else:
-                                    st.session_state.my_schedule.append(course)
-                                    st.rerun()
-                            
-                            # Reason 표시
-                            if course.get('reason'):
-                                st.markdown(f"<div style='font-size:11px; color:#888; background:#eee; display:inline-block; padding:2px 6px; border-radius:4px; margin-top:-10px; margin-bottom:10px;'>💡 {course['reason']}</div>", unsafe_allow_html=True)
-
+                        st.markdown(f"""
+                        <div style="{card_style} padding:12px; border-radius:8px; margin-bottom:10px; box-shadow:0 2px 5px rgba(0,0,0,0.03); background-color:white;">
+                            <div style="font-weight:700; color:#333; font-size:15px;">{course['name']}</div>
+                            <div style="font-size:13px; color:#666; margin-top:2px;">{course['credits']}학점 | {course['professor']}</div>
+                            <div style="font-size:12px; color:#888; margin-top:4px;">🕒 {', '.join(course['time_slots']) if course['time_slots'] else '미정'}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        if st.button("담기 ➕", key=f"add_{key_prefix}_{course['id']}", use_container_width=True):
+                            conflict, conflict_name = check_time_conflict(course, st.session_state.my_schedule)
+                            if conflict:
+                                st.toast(f"⚠️ 시간 충돌! '{conflict_name}' 수업과 겹칩니다.", icon="🚫")
+                            else:
+                                st.session_state.my_schedule.append(course)
+                                st.rerun()
+                        st.write("") # Spacer
 
                     # 분류 및 렌더링
                     must_list = [c for c in st.session_state.candidate_courses if c.get('priority') == 'High']
@@ -1005,17 +1025,14 @@ with st.container(border=True): # CSS가 이 border=True를 Shadow Card로 변�
 
                     with tab1:
                         for c in must_list: draw_course_row(c, "must")
-                        if not must_list: st.info("표시할 과목이 없습니다.")
                     with tab2:
                         for c in major_list: draw_course_row(c, "mj")
-                        if not major_list: st.info("표시할 과목이 없습니다.")
                     with tab3:
                         for c in other_list: draw_course_row(c, "ot")
-                        if not other_list: st.info("표시할 과목이 없습니다.")
 
             # [우측] 실시간 프리뷰
             with col_right:
-                st.subheader("🗓️ 내 시간표")
+                st.markdown("#### 🗓️ Weekly Schedule")
                 
                 # 학점 대시보드
                 if "max_credits" not in st.session_state:
@@ -1023,24 +1040,23 @@ with st.container(border=True): # CSS가 이 border=True를 Shadow Card로 변�
                 
                 total_credits = sum([c.get('credits', 0) for c in st.session_state.my_schedule])
                 
-                # 학점 게이지 바
-                st.caption(f"현재 신청 학점: {total_credits} / {st.session_state.max_credits}")
+                # 학점 게이지 (Custom CSS)
+                st.caption(f"Credits: {total_credits} / {st.session_state.max_credits}")
                 if st.session_state.max_credits > 0:
                     prog = min(total_credits / st.session_state.max_credits, 1.0)
                     st.progress(prog)
                 
                 # 최대 학점 조절
-                st.session_state.max_credits = st.number_input("최대 학점 설정", 15, 30, st.session_state.max_credits, label_visibility="collapsed")
+                st.session_state.max_credits = st.number_input("Max Credits", 15, 30, st.session_state.max_credits, label_visibility="collapsed")
                 
-                # 신청 내역 (태그 형태)
+                # 신청 내역 리스트 (Pill Tags)
                 if st.session_state.my_schedule:
-                    st.markdown("##### 신청 목록")
-                    del_cols = st.columns(4)
+                    st.markdown("<div style='margin-bottom:10px;'></div>", unsafe_allow_html=True)
+                    del_cols = st.columns(3)
                     for idx, added_course in enumerate(st.session_state.my_schedule):
-                        # 4열로 나열해서 삭제 버튼 배치
-                        col_idx = idx % 4
+                        col_idx = idx % 3
                         with del_cols[col_idx]:
-                            if st.button(f"❌ {added_course['name']}", key=f"del_{idx}", help="클릭 시 삭제"):
+                            if st.button(f"✕ {added_course['name']}", key=f"del_{idx}", help="제거"):
                                 st.session_state.my_schedule.pop(idx)
                                 st.rerun()
                 
@@ -1049,52 +1065,54 @@ with st.container(border=True): # CSS가 이 border=True를 Shadow Card로 변�
                 st.markdown(html_table, unsafe_allow_html=True)
                 
                 st.write("")
-                if st.button("💾 시간표 저장하기", use_container_width=True, type="primary"):
-                    if not st.session_state.my_schedule:
-                        st.error("과목을 선택해주세요.")
-                    else:
-                        st.session_state.timetable_result = html_table 
-                        doc_data = {
-                            "result": html_table,
-                            "major": major,
-                            "grade": grade,
-                            "name": f"{major} {grade} (직접설계)",
-                            "is_favorite": False,
-                            "created_at": datetime.datetime.now()
-                        }
-                        if st.session_state.user and fb_manager.is_initialized:
-                             doc_id = str(int(time.time()))
-                             if fb_manager.save_data('timetables', doc_id, doc_data):
-                                 st.toast("저장 완료!", icon="✅")
+                col_save_tt, col_reset_tt = st.columns([3, 1])
+                with col_save_tt:
+                    if st.button("💾 Save Schedule", use_container_width=True, type="primary"):
+                        if not st.session_state.my_schedule:
+                            st.error("Empty Schedule")
                         else:
-                            st.warning("로그인 후 저장할 수 있습니다.")
-                
-                if st.button("🔄 초기화", use_container_width=True):
-                    st.session_state.my_schedule = []
-                    st.rerun()
+                            st.session_state.timetable_result = html_table 
+                            doc_data = {
+                                "result": html_table,
+                                "major": major,
+                                "grade": grade,
+                                "name": f"{major} {grade} (Custom)",
+                                "is_favorite": False,
+                                "created_at": datetime.datetime.now()
+                            }
+                            if st.session_state.user and fb_manager.is_initialized:
+                                 doc_id = str(int(time.time()))
+                                 if fb_manager.save_data('timetables', doc_id, doc_data):
+                                     st.toast("Saved successfully!", icon="✅")
+                            else:
+                                st.warning("Please login first.")
+                with col_reset_tt:
+                     if st.button("Reset", use_container_width=True):
+                        st.session_state.my_schedule = []
+                        st.rerun()
 
     elif st.session_state.current_menu == "📈 성적 및 진로 진단":
-        st.subheader("📈 성적 및 진로 정밀 진단")
-        st.info("💡 **취득 학점 내역**을 캡처해서 올려주세요. AI 취업 컨설턴트가 졸업 요건과 커리어를 분석합니다.")
+        st.subheader("📈 Career & Grade Diagnosis")
+        st.info("💡 **전체 성적표(취득학점 내역)**를 캡처하여 업로드하세요. AI가 삼성전자, 하이닉스 등 대기업 기준에 맞춰 분석해드립니다.")
 
-        # 저장된 결과 로드 기능
+        # 저장된 결과 로드
         if st.session_state.user and fb_manager.is_initialized:
             saved_diags = fb_manager.load_collection('graduation_diagnosis')
             if saved_diags:
-                with st.expander("📂 지난 진단 기록 불러오기"):
-                    selected_diag = st.selectbox("기록 선택", 
+                with st.expander("📂 Load Past Report"):
+                    selected_diag = st.selectbox("Select Report", 
                                                  saved_diags, 
                                                  format_func=lambda x: datetime.datetime.fromtimestamp(int(x['id'])).strftime('%Y-%m-%d %H:%M'),
                                                  label_visibility="collapsed")
-                    if st.button("불러오기", use_container_width=True):
+                    if st.button("Load Report", use_container_width=True):
                         st.session_state.graduation_analysis_result = selected_diag['result']
                         st.rerun()
 
-        uploaded_files = st.file_uploader("이미지 업로드 (Drag & Drop)", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
+        uploaded_files = st.file_uploader("Upload Scorecard Images", type=["png", "jpg", "jpeg"], accept_multiple_files=True)
 
         if uploaded_files:
-            if st.button("진단 시작 🚀", type="primary", use_container_width=True):
-                with st.spinner("성적표를 독해하고 분석 중입니다..."):
+            if st.button("Analyze Now 🚀", type="primary", use_container_width=True):
+                with st.spinner("AI Consultant is analyzing your data..."):
                     analysis_result = analyze_graduation_requirements(uploaded_files)
                     st.session_state.graduation_analysis_result = analysis_result
                     st.session_state.graduation_chat_history = []
@@ -1106,9 +1124,9 @@ with st.container(border=True): # CSS가 이 border=True를 Shadow Card로 변�
             result_text = st.session_state.graduation_analysis_result
             
             # 탭으로 섹션 구분
-            tab1, tab2, tab3 = st.tabs(["🎓 졸업 요건", "📊 성적 분석", "💼 커리어 솔루션"])
+            tab1, tab2, tab3 = st.tabs(["🎓 Graduation Check", "📊 Grade Analysis", "💼 Career Solution"])
             
-            # 단순 파싱 (섹션 태그 기준)
+            # 파싱 로직
             parts_grad = result_text.split("[[SECTION:GRADUATION]]")
             content_grad = parts_grad[1].split("[[SECTION:GRADES]]")[0] if len(parts_grad) > 1 else result_text
             
@@ -1124,34 +1142,34 @@ with st.container(border=True): # CSS가 이 border=True를 Shadow Card로 변�
             
             # 저장 버튼
             if st.session_state.user and fb_manager.is_initialized:
-                if st.button("☁️ 결과 저장하기", use_container_width=True):
+                if st.button("☁️ Save Report", use_container_width=True):
                     doc_data = {
                         "result": st.session_state.graduation_analysis_result,
                         "created_at": datetime.datetime.now()
                     }
                     doc_id = str(int(time.time()))
                     fb_manager.save_data('graduation_diagnosis', doc_id, doc_data)
-                    st.toast("저장되었습니다!", icon="✅")
+                    st.toast("Report Saved!", icon="✅")
             
             # 상담 채팅창
             st.write("---")
-            st.subheader("💬 컨설턴트와의 대화")
+            st.subheader("💬 Chat with Consultant")
             for msg in st.session_state.graduation_chat_history:
                 with st.chat_message(msg["role"]):
                     st.markdown(msg["content"])
 
-            if chat_input := st.chat_input("추가 질문이나 수정할 내용을 입력하세요..."):
+            if chat_input := st.chat_input("Ask about your career path..."):
                 st.session_state.graduation_chat_history.append({"role": "user", "content": chat_input})
                 add_log("user", f"[진단상담] {chat_input}", "📈 성적 및 진로 진단")
                 with st.chat_message("user"):
                     st.write(chat_input)
                 with st.chat_message("assistant"):
-                    with st.spinner("분석 중..."):
+                    with st.spinner("Thinking..."):
                         response = chat_with_graduation_ai(st.session_state.graduation_analysis_result, chat_input)
                         if "[수정]" in response:
                             new_result = response.replace("[수정]", "").strip()
                             st.session_state.graduation_analysis_result = new_result
-                            st.session_state.graduation_chat_history.append({"role": "assistant", "content": "정보를 반영하여 업데이트했습니다."})
+                            st.session_state.graduation_chat_history.append({"role": "assistant", "content": "Information Updated."})
                             st.rerun()
                         else:
                             st.markdown(response)
