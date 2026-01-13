@@ -29,74 +29,67 @@ st.set_page_config(
 # 2. 통합 스타일 설정 (버건디 테마 + 모바일 최적화 + 채팅창 디자인)
 def set_style():
    
-    st.markdown("""
-        <style>
-        /* [기본 테마] 전체 배경: 은은한 톤 */
-        .stApp {
-            background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
-        }
+    # ▼▼▼ [최종_진짜_해결.py] 기존 맨 아래 CSS 코드를 지우고 이걸 붙여넣으세요 ▼▼▼
+st.markdown("""
+    <style>
+    /* 1. 전체 배경 (광운대 버건디 틴트) */
+    .stApp {
+        background: linear-gradient(180deg, #FFFFFF 0%, #FFF0F5 100%) !important;
+        background-attachment: fixed !important;
+    }
 
-        /* [타이틀] 광운 버건디 색상 적용 */
-        h1 {
-            color: #8A1538 !important;
-            font-family: 'Pretendard', sans-serif;
-            font-weight: 800;
-        }
-        
-        /* [메뉴] 라디오 버튼 스타일링 (카드 형태) */
-        div.row-widget.stRadio > div {
-            justify-content: center;
-            gap: 15px;
-        }
-        div.row-widget.stRadio > div[role="radiogroup"] > label {
-            background-color: white;
-            border: 2px solid #E9ECEF;
-            padding: 10px 20px;
-            border-radius: 12px;
-            font-weight: bold;
-            color: #495057;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-            transition: all 0.2s;
-        }
-        div.row-widget.stRadio > div[role="radiogroup"] > label:hover,
-        div.row-widget.stRadio > div[role="radiogroup"] > label[data-checked="true"] {
-            border-color: #8A1538;
-            background-color: #FFF5F7;
-            color: #8A1538;
-        }
+    /* 2. [문제 해결] 하단 영역 전체 투명화 */
+    [data-testid="stBottom"] {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    [data-testid="stBottom"] > div {
+        background-color: transparent !important;
+    }
 
-        /* [채팅창] 둥글고 버건디색 포커스 */
-        [data-testid="stChatInput"] {
-            background-color: transparent;
-        }
-        .stChatInput textarea {
-            background-color: #F8F9FA; 
-            border: 1px solid #E9ECEF;
-            border-radius: 20px; 
-            padding: 12px;
-        }
-        .stChatInput textarea:focus {
-            border-color: #8A1538 !important;
-            box-shadow: 0 0 0 1px #8A1538 !important;
-        }
-        [data-testid="stChatInputSubmitButton"] {
-            color: #8A1538;
-        }
+    /* 3. [핵심] 입력창 뒤에 깔리는 '희미한 회색 박스' 제거 */
+    /* 이 부분이 핵심입니다. 입력창을 감싸는 컨테이너의 배경을 날려버림 */
+    [data-testid="stChatInput"] {
+        background-color: transparent !important;
+        border-color: transparent !important;
+    }
+    
+    /* 입력창 내부의 첫 번째 래퍼(Wrapper)도 투명하게 */
+    [data-testid="stChatInput"] > div {
+        background-color: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
 
-        /* [모바일 최적화 및 테이블] */
-        footer { visibility: hidden; }
-        @media only screen and (max-width: 600px) {
-            .main .block-container {
-                padding-left: 0.2rem !important;
-                padding-right: 0.2rem !important;
-            }
-        }
-        div[data-testid="stMarkdownContainer"] table {
-            width: 100% !important;
-            table-layout: fixed !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    /* 4. 실제 입력칸(Textarea)만 흰색 알약으로 디자인 */
+    textarea[data-testid="stChatInputTextArea"] {
+        background-color: #FFFFFF !important; /* 여기만 흰색 */
+        border: 2px solid #8A1538 !important; /* 버건디 테두리 */
+        border-radius: 30px !important; /* 둥글게 */
+        padding: 15px !important;
+        box-shadow: 0 4px 12px rgba(138, 21, 56, 0.1) !important;
+    }
+    
+    /* 5. 포커스 효과 */
+    textarea[data-testid="stChatInputTextArea"]:focus {
+        border-color: #8A1538 !important;
+        box-shadow: 0 0 0 3px rgba(138, 21, 56, 0.2) !important;
+    }
+
+    /* 6. 전송 버튼 아이콘 */
+    [data-testid="stChatInputSubmitButton"] {
+        background-color: transparent !important;
+        color: #8A1538 !important;
+    }
+    
+    /* 7. 전송 버튼 아이콘 호버 효과 제거 (배경 생기는 거 방지) */
+    [data-testid="stChatInputSubmitButton"]:hover {
+        background-color: transparent !important;
+        color: #5F0E26 !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 set_style()
 # API Key 로드
@@ -1029,6 +1022,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
