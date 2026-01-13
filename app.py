@@ -80,7 +80,7 @@ def set_style():
             border-color: #8A1538 !important;
             box-shadow: 0 0 0 1px #8A1538 !important;
         }
-        /* 전송 버튼 색상 */
+        /* 전송 버튼 색상 */ 
         [data-testid="stChatInputSubmitButton"] {
             color: #8A1538;
         }
@@ -103,9 +103,9 @@ st.divider()
 
 
     # 3-3. 채팅 히스토리 출력
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
     # 3-4. 채팅 입력창 (하단 고정, 스타일 적용됨)
     if prompt := st.chat_input("궁금한 학사 정보를 입력하세요... (예: 졸업 요건이 뭐야?)"):
@@ -127,8 +127,6 @@ st.divider()
 
 # -----------------------------------------------------------------------------
 # [0] 설정 및 데이터 로드
-# -----------------------------------------------------------------------------
-st.set_page_config(page_title="KW-강의마스터 Pro", page_icon="🎓", layout="wide")
 
 # [모바일 최적화 CSS]
 st.markdown("""
@@ -1108,6 +1106,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
