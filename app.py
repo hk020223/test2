@@ -97,16 +97,7 @@ st.markdown("<h5 style='text-align: center; color: #666;'>광운대학교 학생
 
 st.write("") 
 
-# 2. 기능 선택
-_, col_center, _ = st.columns([1, 4, 1])
-with col_center:
-    selected_function = st.radio(
-        "메뉴 선택",
-        options=["💬 AI 학사 지식인", "🗓️ 스마트 시간표", "📈 성적/진로 진단"],
-        index=0,
-        horizontal=True,
-        label_visibility="collapsed"
-    )
+
 
 st.divider()
 
@@ -1131,6 +1122,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
