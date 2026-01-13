@@ -1029,38 +1029,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
-# ▼▼▼ [최종 디자인 수정] 파일 맨 아래에 이 코드를 붙여넣으세요 (기존 맨 아래 코드는 지우고) ▼▼▼
-st.markdown("""
-    <style>
-    /* 1. 배경: 위는 흰색 -> 아래는 확실한 광운대 버건디 틴트 (말린 장미색) */
-    .stApp {
-        background: linear-gradient(180deg, #FFFFFF 0%, #F8F9FA 40%, #F0E1E6 100%) !important;
-        background-attachment: fixed !important;
-    }
 
-    /* 2. [핵심] 하단 채팅창 컨테이너 배경 투명화 및 테두리 제거 */
-    /* stBottom 내부의 div에 스타일이 적용되는 경우가 많아 타겟을 명확히 함 */
-    [data-testid="stBottom"] > div {
-        background-color: transparent !important;
-        border-top: none !important;
-        box-shadow: none !important;
-    }
-    
-    /* 3. 입력칸 디자인: 흰색 박스에 버건디 테두리 */
-    .stChatInput textarea {
-        background-color: #FFFFFF !important; /* 완전 흰색 */
-        border: 2px solid #8A1538 !important; /* 버건디 테두리 */
-        border-radius: 15px !important;
-        box-shadow: 0 4px 12px rgba(138, 21, 56, 0.15) !important; /* 은은한 붉은 그림자 */
-        color: #333333 !important;
-    }
-    
-    /* 4. 입력칸 포커스 시 효과 */
-    .stChatInput textarea:focus {
-        box-shadow: 0 0 0 3px rgba(138, 21, 56, 0.2) !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 
 
