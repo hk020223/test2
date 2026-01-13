@@ -16,6 +16,78 @@ from langchain_core.messages import HumanMessage
 import firebase_admin
 from firebase_admin import credentials, firestore
 
+
+# 페이지 기본 설정 (가장 위에 있어야 함)
+st.set_page_config(
+    page_title="KW-Plan: AI 학사 설계",
+    page_icon="🎓",
+    layout="wide"
+)
+
+def set_style():
+    st.markdown("""
+        <style>
+        /* 1. 배경 설정 (광운대 로고 + 은은한 그라데이션) */
+        .stApp {
+            /* 배경 이미지 URL (광운대 UI 심볼) */
+            background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
+                              url("https://www.kw.ac.kr/ko/img/intro/symbol_ui01.jpg");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* 2. 사이드바 스타일 (버건디 그라데이션) */
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #F8F9FA 0%, #E9ECEF 100%);
+            border-right: 1px solid #ddd;
+        }
+        
+        /* 3. 헤더/폰트 스타일 */
+        h1, h2, h3 {
+            color: #8A1538 !important; /* 광운 버건디 */
+            font-family: 'Pretendard', sans-serif;
+            font-weight: 700;
+        }
+        
+        /* 4. 깔쌈한 버튼 스타일 (그림자 + 둥근 모서리) */
+        .stButton > button {
+            width: 100%;
+            background: linear-gradient(to right, #8A1538, #5c0d25);
+            color: white;
+            border-radius: 10px;
+            border: none;
+            padding: 10px 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .stButton > button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(138, 21, 56, 0.3);
+        }
+
+        /* 5. 입력창 포커스 색상 변경 */
+        input:focus, textarea:focus, select:focus {
+            border-color: #8A1538 !important;
+            box-shadow: 0 0 0 1px #8A1538 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+# 스타일 적용 함수 호출
+set_style()
+
+# --- 여기부터 본문 내용 작성 ---
+st.title("🦅 Kwangwoon AI Planner")
+st.write("광운대학교 학생을 위한 지능형 학사 설계 에이전트입니다.")
+
+col1, col2 = st.columns(2)
+with col1:
+    st.info("💡 **Smart Advice**\n\nAI가 졸업 요건과 관심 직무를 분석합니다.")
+with col2:
+    st.button("내 학사 설계 시작하기")
+
 # -----------------------------------------------------------------------------
 # [0] 설정 및 데이터 로드
 # -----------------------------------------------------------------------------
@@ -999,3 +1071,4 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
