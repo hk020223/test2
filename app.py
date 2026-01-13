@@ -17,14 +17,42 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # -----------------------------------------------------------------------------
-# [0] 설정 및 데이터 로드
+# [0] 설정 및 초기화 (가장 먼저 실행)
 # -----------------------------------------------------------------------------
 st.set_page_config(page_title="KW-강의마스터 Pro", page_icon="🦄", layout="wide")
+
+# [Fix] Session State 초기화 (AttributeError 방지용 최상단 배치)
+if "candidate_courses" not in st.session_state:
+    st.session_state.candidate_courses = []
+if "my_schedule" not in st.session_state:
+    st.session_state.my_schedule = []
+if "global_log" not in st.session_state:
+    st.session_state.global_log = [] 
+if "timetable_result" not in st.session_state:
+    st.session_state.timetable_result = "" 
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = [] 
+if "current_menu" not in st.session_state:
+    st.session_state.current_menu = "🤖 AI 학사 지식인"
+if "menu_radio" not in st.session_state:
+    st.session_state["menu_radio"] = "🤖 AI 학사 지식인"
+if "timetable_chat_history" not in st.session_state:
+    st.session_state.timetable_chat_history = []
+if "graduation_analysis_result" not in st.session_state:
+    st.session_state.graduation_analysis_result = ""
+if "graduation_chat_history" not in st.session_state:
+    st.session_state.graduation_chat_history = []
+if "user" not in st.session_state:
+    st.session_state.user = None
+if "current_timetable_meta" not in st.session_state:
+    st.session_state.current_timetable_meta = {}
+if "selected_syllabus" not in st.session_state:
+    st.session_state.selected_syllabus = None
 
 def set_style():
     st.markdown("""
         <style>
-        /* [Import Font] Pretendard - 웹 폰트 표준 */
+        /* [Import Font] Pretendard */
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         
         /* [Global Reset] */
@@ -33,172 +61,160 @@ def set_style():
             color: #333333;
         }
         
-        /* [Background] Warm Grey - 눈이 편안한 배경 */
+        /* [Background Upgrade] Subtle Gradient + Noise Texture */
         .stApp {
-            background-color: #F8F9FA !important;
+            /* 1. 부드러운 웜 그레이 그라데이션 */
+            background: linear-gradient(135deg, #F9FAFB 0%, #F3F0F5 100%) !important;
+            background-attachment: fixed !important;
+        }
+        
+        /* 배경에 은은한 KW 버건디 빛이 감돌도록 가상 요소 추가 (선택사항, 너무 화려하면 제거 가능) */
+        .stApp::before {
+            content: "";
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(138,21,56,0.03) 0%, transparent 60%);
+            z-index: -1;
+            pointer-events: none;
         }
 
-        /* [Header Alignment] 중앙 정렬 완벽 보정 */
+        /* [Header Alignment] */
         h1.main-title {
             font-family: 'Pretendard', sans-serif;
             font-weight: 800;
-            color: #8A1538; /* 광운 버건디 */
-            font-size: 2.8rem;
+            color: #8A1538;
+            font-size: 3rem;
             text-align: center;
-            margin-bottom: 0.5rem;
-            letter-spacing: -1px;
-            text-shadow: 0 2px 4px rgba(138, 21, 56, 0.1);
+            margin-bottom: 0.2rem;
+            letter-spacing: -1.5px;
+            /* 텍스트에 약간의 그라데이션 효과 */
+            background: -webkit-linear-gradient(45deg, #8A1538, #C2185B);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         p.subtitle {
             text-align: center;
-            color: #6c757d;
+            color: #666;
             font-size: 1.1rem;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
             font-weight: 500;
+            opacity: 0.8;
         }
 
-        /* [Navigation] Floating Segmented Control (Toss Style) */
+        /* [Navigation] Glassmorphism Segmented Control */
         div.row-widget.stRadio > div[role="radiogroup"] {
-            background-color: #FFFFFF;
-            padding: 8px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 6px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.03);
             display: flex;
             justify-content: center;
-            gap: 10px;
-            border: 1px solid #E9ECEF;
-            max-width: 800px;
-            margin: 0 auto; /* 중앙 정렬 */
+            gap: 8px;
+            border: 1px solid rgba(255,255,255,0.6);
+            max-width: 750px;
+            margin: 0 auto;
         }
         div.row-widget.stRadio > div[role="radiogroup"] > label {
             flex: 1;
             text-align: center;
-            border-radius: 12px !important;
-            padding: 12px 20px !important;
+            border-radius: 16px !important;
+            padding: 10px 15px !important;
             font-weight: 600 !important;
-            font-size: 1rem !important;
-            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            font-size: 0.95rem !important;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             border: none !important;
             background: transparent !important;
-            color: #ADB5BD !important;
+            color: #888 !important;
             box-shadow: none !important;
             margin: 0 !important;
         }
         div.row-widget.stRadio > div[role="radiogroup"] > label[data-checked="true"] {
-            background-color: #8A1538 !important; /* Active Color */
+            background: linear-gradient(135deg, #8A1538 0%, #A01B42 100%) !important;
             color: #FFFFFF !important;
-            box-shadow: 0 4px 12px rgba(138, 21, 56, 0.25) !important;
-            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(138, 21, 56, 0.3) !important;
+            transform: scale(1.02);
         }
         div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
             color: #8A1538 !important;
-            background-color: #FFF5F7 !important;
+            background-color: rgba(138, 21, 56, 0.05) !important;
         }
 
-        /* [Card UI] Soft Shadow Containers */
+        /* [Card UI] Glassmorphism Containers */
         [data-testid="stVerticalBlockBorderWrapper"] {
-            background-color: #FFFFFF !important;
+            background-color: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(12px) !important;
             border-radius: 24px !important;
-            border: 1px solid rgba(0,0,0,0.03) !important;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.6) !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02), 0 1px 3px rgba(0,0,0,0.02) !important;
             padding: 30px !important;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             transition: transform 0.2s ease;
         }
         
-        /* [Input Field] Glassmorphism Chat */
+        /* [Input Field] Floating Glass Input */
         [data-testid="stChatInput"] {
-            padding-bottom: 20px;
+            padding-bottom: 30px;
         }
         textarea[data-testid="stChatInputTextArea"] {
-            background-color: rgba(255, 255, 255, 0.7) !important;
+            background-color: rgba(255, 255, 255, 0.6) !important;
             backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
             border: 1px solid rgba(138, 21, 56, 0.15) !important;
             border-radius: 30px !important;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05) !important;
-            padding: 15px 20px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03) !important;
+            padding: 15px 25px !important;
             font-size: 1rem !important;
             color: #333 !important;
         }
         textarea[data-testid="stChatInputTextArea"]:focus {
             border-color: #8A1538 !important;
-            box-shadow: 0 8px 32px rgba(138, 21, 56, 0.15) !important;
-            background-color: rgba(255, 255, 255, 0.95) !important;
-        }
-        [data-testid="stChatInputSubmitButton"] {
-            background: transparent !important;
-            color: #8A1538 !important;
-            border: none !important;
-        }
-
-        /* [Sidebar] Dashboard Style */
-        [data-testid="stSidebar"] {
-            background-color: #FFFFFF !important;
-            border-right: 1px solid #F0F0F0;
-        }
-        [data-testid="stSidebar"] hr {
-            margin: 20px 0;
-            border-color: #F0F0F0;
+            box-shadow: 0 8px 32px rgba(138, 21, 56, 0.1) !important;
+            background-color: rgba(255, 255, 255, 0.9) !important;
         }
         
-        /* [Buttons] Modern Pill Shape */
-        button {
-            border-radius: 12px !important;
-            font-weight: 600 !important;
-            transition: all 0.2s !important;
+        /* [Sidebar] Clean & Modern */
+        [data-testid="stSidebar"] {
+            background-color: #FFFFFF !important; /* 사이드바는 깔끔하게 화이트 유지 */
+            border-right: 1px solid rgba(0,0,0,0.05);
         }
+        
+        /* [Buttons] Gradient Primary */
         button[kind="primary"] {
-            background: linear-gradient(135deg, #8A1538 0%, #68102A 100%) !important;
-            box-shadow: 0 4px 15px rgba(138, 21, 56, 0.3) !important;
+            background: linear-gradient(90deg, #8A1538 0%, #B01E48 100%) !important;
+            box-shadow: 0 4px 12px rgba(138, 21, 56, 0.25) !important;
             border: none !important;
+            border-radius: 12px !important;
+            padding: 0.5rem 1.2rem !important;
+            transition: all 0.3s ease !important;
         }
         button[kind="primary"]:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(138, 21, 56, 0.4) !important;
-        }
-        button[kind="secondary"] {
-            background-color: #F8F9FA !important;
-            color: #555 !important;
-            border: 1px solid #E9ECEF !important;
+            box-shadow: 0 8px 20px rgba(138, 21, 56, 0.35) !important;
         }
 
-        /* [Expander] Clean Accordion */
+        /* [Expander] Minimalist */
         .streamlit-expanderHeader {
-            background-color: #FFFFFF !important;
+            background-color: rgba(255, 255, 255, 0.5) !important;
             border-radius: 12px !important;
             font-weight: 600 !important;
-            color: #333 !important;
-            border: 1px solid #eee !important;
+            color: #444 !important;
+            border: 1px solid rgba(0,0,0,0.05) !important;
         }
         
-        /* [Tabs] Minimalist Tabs */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 20px;
-            background-color: transparent;
-            border-bottom: 2px solid #eee;
-        }
-        .stTabs [data-baseweb="tab"] {
-            height: 50px;
-            white-space: pre-wrap;
-            border: none;
-            color: #888;
-            font-weight: 600;
-        }
-        .stTabs [aria-selected="true"] {
-            color: #8A1538 !important;
-            border-bottom: 3px solid #8A1538 !important;
-        }
-
-        /* [Toast] Styling */
+        /* [Toast] */
         div[data-baseweb="toast"] {
-            background-color: white !important;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1) !important;
-            border-radius: 12px !important;
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08) !important;
+            border-radius: 16px !important;
             border-left: 5px solid #8A1538 !important;
+            font-weight: 500;
         }
         
-        /* Hide default header/footer */
+        /* Hide Defaults */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         </style>
@@ -216,36 +232,7 @@ if not api_key:
     st.error("🚨 **Google API Key가 설정되지 않았습니다.**")
     st.stop()
 
-# 세션 상태 초기화 (없으면 생성)
-if "global_log" not in st.session_state:
-    st.session_state.global_log = [] 
-if "timetable_result" not in st.session_state:
-    st.session_state.timetable_result = "" 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [] 
-if "current_menu" not in st.session_state:
-    st.session_state.current_menu = "🤖 AI 학사 지식인"
-# 라디오 버튼 위젯 상태 초기화
-if "menu_radio" not in st.session_state:
-    st.session_state["menu_radio"] = "🤖 AI 학사 지식인"
-
-if "timetable_chat_history" not in st.session_state:
-    st.session_state.timetable_chat_history = []
-if "graduation_analysis_result" not in st.session_state:
-    st.session_state.graduation_analysis_result = ""
-if "graduation_chat_history" not in st.session_state:
-    st.session_state.graduation_chat_history = []
-if "user" not in st.session_state:
-    st.session_state.user = None
-
-# 현재 불러온 시간표 메타데이터 (ID, 이름, 즐겨찾기 여부 등) 관리용
-if "current_timetable_meta" not in st.session_state:
-    st.session_state.current_timetable_meta = {}
-
 # [추가] 선택된 강의계획서 뷰어 상태 관리
-if "selected_syllabus" not in st.session_state:
-    st.session_state.selected_syllabus = None
-
 def add_log(role, content, menu_context=None):
     timestamp = datetime.datetime.now().strftime("%H:%M")
     st.session_state.global_log.append({
@@ -460,7 +447,7 @@ def render_interactive_timetable(schedule_list):
     table_grid = {i: {d: None for d in days} for i in range(1, 10)}
     online_courses = []
 
-    # 2. 색상 팔레트 (Modern Pastel)
+    # 2. 색상 팔레트 (Modern Pastel + Shadow)
     palette = [
         {"bg": "#FFEBEE", "border": "#FFCDD2", "text": "#C62828"}, # Red
         {"bg": "#E3F2FD", "border": "#BBDEFB", "text": "#1565C0"}, # Blue
@@ -503,7 +490,7 @@ def render_interactive_timetable(schedule_list):
     html = """
     <style>
         .tt-table { width: 100%; border-collapse: separate; border-spacing: 6px; table-layout: fixed; }
-        .tt-header { background-color: transparent; color: #888; padding: 10px; font-weight: 700; text-align: center; font-size: 14px; border-bottom: 2px solid #eee; }
+        .tt-header { background-color: transparent; color: #888; padding: 10px; font-weight: 700; text-align: center; font-size: 14px; border-bottom: 2px solid rgba(0,0,0,0.05); }
         .tt-time { color: #aaa; font-weight: 600; text-align: center; vertical-align: middle; font-size: 12px; height: 60px;}
         .tt-cell { vertical-align: middle; padding: 0; height: 60px; }
         .tt-card {
@@ -513,11 +500,12 @@ def render_interactive_timetable(schedule_list):
             font-size: 12px; line-height: 1.3; padding: 4px; text-align: center;
             transition: all 0.2s;
             cursor: default;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
-        .tt-card:hover { transform: scale(1.05); box-shadow: 0 8px 16px rgba(0,0,0,0.1); z-index: 10; }
+        .tt-card:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); z-index: 10; }
         .tt-name { font-weight: 800; margin-bottom: 2px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 95%; }
         .tt-prof { font-size: 11px; opacity: 0.9; font-weight: 500; }
-        .tt-online { margin-top: 20px; padding: 15px; background: #fff; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
+        .tt-online { margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.7); backdrop-filter: blur(5px); border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); }
         .tt-online-badge { display: inline-block; margin: 4px; padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     </style>
     <table class="tt-table">
@@ -547,7 +535,7 @@ def render_interactive_timetable(schedule_list):
                 html += f"<td class='tt-cell'>{card_html}</td>"
             else:
                 # 빈 셀 (가이드라인)
-                html += "<td class='tt-cell' style='background-color: #fdfdfd; border-radius: 8px; border: 1px dashed #f0f0f0;'></td>"
+                html += "<td class='tt-cell' style='background-color: rgba(255,255,255,0.3); border-radius: 8px; border: 1px dashed rgba(0,0,0,0.05);'></td>"
         html += "</tr>"
     html += "</table>"
 
@@ -820,9 +808,9 @@ with st.sidebar:
     else:
         # 로그인된 상태의 프로필 카드
         st.markdown(f"""
-        <div style="background-color: #F8F9FA; padding: 16px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #E9ECEF;">
+        <div style="background-color: rgba(255,255,255,0.7); padding: 16px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
             <div style="font-weight: bold; color: #333; margin-bottom: 4px;">👤 {st.session_state.user['email']}</div>
-            <div style="font-size: 12px; color: #8A1538;">Student Verified</div>
+            <div style="font-size: 12px; color: #8A1538; font-weight: 600;">Verified Student</div>
         </div>
         """, unsafe_allow_html=True)
         if st.button("로그아웃", use_container_width=True):
@@ -866,7 +854,7 @@ with st.sidebar:
 
     st.write("")
     if PRE_LEARNED_DATA:
-         st.markdown("<div style='font-size:12px; color:#2E7D32; text-align:center;'>✅ KLAS Knowledge Active</div>", unsafe_allow_html=True)
+         st.markdown("<div style='font-size:12px; color:#2E7D32; text-align:center; opacity:0.8;'>✅ KLAS Knowledge Active</div>", unsafe_allow_html=True)
     else:
         st.error("⚠️ 데이터 없음")
 
