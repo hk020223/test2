@@ -18,67 +18,143 @@ from firebase_admin import credentials, firestore
 
 import streamlit as st
 
-# 1. 페이지 설정 (가장 상단)
+# 1. 페이지 설정
 st.set_page_config(
     page_title="KW-Plan: AI 학사 설계",
-    page_icon="🦄",  # 비마(Pegasus) 아이콘
+    page_icon="🦄", 
     layout="wide"
 )
 
-# 2. 스타일 설정 (버건디 그라데이션 배경 및 폰트)
+# 2. 스타일 설정 (CSS)
 def set_style():
     st.markdown("""
         <style>
-        /* 전체 배경: 광운대 버건디 그라데이션 */
+        /* 1. 전체 배경: 은은한 톤 */
         .stApp {
-            /* 상단에서 하단으로 은은한 버건디 그라데이션 */
-            background: linear-gradient(to bottom, #ffffff 0%, #f8f0f2 100%);
+            background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
         }
 
-        /* 메인 타이틀 색상 (진한 광운 버건디) */
+        /* 2. 메인 타이틀 (광운 버건디) */
         h1 {
             color: #8A1538 !important;
             font-family: 'Pretendard', sans-serif;
             font-weight: 800;
         }
-        
-        /* 라디오 버튼 선택지 스타일 */
+
+        /* 3. 라디오 버튼 (기능 선택) 스타일링 */
         div.row-widget.stRadio > div {
-            flex-direction: row;
-            gap: 20px;
-            justify-content: center; /* 중앙 정렬 */
+            justify-content: center;
+            gap: 15px;
         }
-        /* 선택지 박스 디자인 */
         div.row-widget.stRadio > div[role="radiogroup"] > label {
-            background-color: #FFFFFF;
+            background-color: white;
             border: 2px solid #E9ECEF;
-            padding: 15px 25px;
-            border-radius: 15px;
+            padding: 10px 20px;
+            border-radius: 12px;
             font-weight: bold;
             color: #495057;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            transition: all 0.2s;
         }
-        /* 마우스 호버 및 선택 시 효과 (버건디 강조) */
         div.row-widget.stRadio > div[role="radiogroup"] > label:hover,
         div.row-widget.stRadio > div[role="radiogroup"] > label[data-checked="true"] {
             border-color: #8A1538;
-            background-color: #FFF5F7; /* 아주 연한 핑크 배경 */
+            background-color: #FFF5F7;
             color: #8A1538;
-            box-shadow: 0 4px 8px rgba(138, 21, 56, 0.15);
+        }
+
+        /* 4. [핵심] 채팅 입력창 스타일 커스텀 */
+        /* 입력창 컨테이너 */
+        [data-testid="stChatInput"] {
+            background-color: transparent;
+        }
+        /* 입력 텍스트 박스 둥글게 & 테두리 설정 */
+        .stChatInput textarea {
+            background-color: #F8F9FA; /* 아주 연한 회색 배경 */
+            border: 1px solid #E9ECEF;
+            border-radius: 20px; /* 둥글게 (알약 모양) */
+            padding: 12px;
+        }
+        /* 입력창 클릭 시(포커스) 버건디 색상 강조 */
+        .stChatInput textarea:focus {
+            border-color: #8A1538 !important;
+            box-shadow: 0 0 0 1px #8A1538 !important;
+        }
+        /* 전송 버튼 색상 */
+        [data-testid="stChatInputSubmitButton"] {
+            color: #8A1538;
         }
         </style>
     """, unsafe_allow_html=True)
 
 set_style()
-# --- UI 레이아웃 구성 ---
 
-# 1. 타이틀 및 서브텍스트 (중앙 정렬)
-col_a, col_b, col_c = st.columns([1, 2, 1])
-with col_b:
-    st.title("🦄 Kwangwoon AI Planner")
-st.markdown("<h5 style='text-align: center; color: #555;'>광운대학교 학생을 위한 지능형 수강설계 에이전트입니다</h5>", unsafe_allow_html=True)
+# --- UI 레이아웃 ---
 
+# 1. 상단 헤더
+st.markdown("<h1 style='text-align: center; color: #8A1538;'>🦄 Kwangwoon AI Planner</h1>", unsafe_allow_html=True)
+st.markdown("<h5 style='text-align: center; color: #666;'>광운대학교 학생을 위한 지능형 수강설계 에이전트</h5>", unsafe_allow_html=True)
+
+st.write("") 
+
+# 2. 기능 선택
+_, col_center, _ = st.columns([1, 4, 1])
+with col_center:
+    selected_function = st.radio(
+        "메뉴 선택",
+        options=["💬 AI 학사 지식인", "🗓️ 스마트 시간표", "📈 성적/진로 진단"],
+        index=0,
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+
+st.divider()
+
+# 3. 기능 구현
+if selected_function == "💬 AI 학사 지식인":
+    # 3-1. 채팅 기록 초기화 (세션 상태 사용)
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # 3-2. 화면 중앙에 '환영 메시지' 표시 (채팅이 없을 때만)
+    if not st.session_state.messages:
+        st.markdown("""
+        <div style="text-align: center; padding: 50px 0; color: #666;">
+            <h3>👋 안녕하세요! 무엇을 도와드릴까요?</h3>
+            <p style="font-size: 14px; color: #888;">
+                졸업 요건, 수강 신청, 복수 전공 등<br>학사 생활에 대해 자유롭게 물어보세요.
+            </p>
+            <div style="margin-top: 20px;">
+                <span style="background: #FFF0F5; color: #8A1538; padding: 5px 10px; border-radius: 15px; font-size: 12px; margin: 0 5px;">#졸업요건</span>
+                <span style="background: #FFF0F5; color: #8A1538; padding: 5px 10px; border-radius: 15px; font-size: 12px; margin: 0 5px;">#장학금신청</span>
+                <span style="background: #FFF0F5; color: #8A1538; padding: 5px 10px; border-radius: 15px; font-size: 12px; margin: 0 5px;">#SW중심대학</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # 3-3. 채팅 히스토리 출력
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # 3-4. 채팅 입력창 (하단 고정, 스타일 적용됨)
+    if prompt := st.chat_input("궁금한 학사 정보를 입력하세요... (예: 졸업 요건이 뭐야?)"):
+        # 사용자 메시지 표시
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # AI 응답 (임시)
+        with st.chat_message("assistant"):
+            response = "💡 (AI 응답 예시) 네, 광운대학교 졸업 요건에 대해 알려드릴게요."
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
+
+elif selected_function == "🗓️ 스마트 시간표":
+    st.success("📅 **스마트 시간표** 화면입니다. 시간표를 자유롭게 수정해보세요.")
+
+elif selected_function == "📈 성적/진로 진단":
+    st.warning("📊 **성적 및 진로 진단** 화면입니다. 성적표를 분석합니다.")
 
 
 
@@ -1070,6 +1146,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
