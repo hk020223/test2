@@ -1030,6 +1030,51 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_chat_history = []
             st.rerun()
 
+# ▼▼▼ [최종_진짜_마지막_디자인.py] 파일 맨 아래에 붙여넣으세요 ▼▼▼
+st.markdown("""
+    <style>
+    /* 1. 전체 배경: 위는 흰색 -> 아래는 은은한 광운대 버건디 틴트 */
+    .stApp {
+        background: linear-gradient(180deg, #FFFFFF 0%, #FFF5F7 100%) !important;
+        background-attachment: fixed !important;
+    }
+
+    /* 2. [핵심] 하단 채팅창 영역의 '모든' 배경과 테두리를 투명화 */
+    [data-testid="stBottom"] {
+        background-color: transparent !important;
+        background-image: none !important; /* 그라데이션 잔여물 제거 */
+        border-top: none !important; /* 위쪽 구분선 제거 */
+        box-shadow: none !important; /* 그림자 제거 */
+    }
+    
+    /* 하단 영역 내부의 컨테이너까지 싹 다 투명하게 */
+    [data-testid="stBottom"] > div {
+        background-color: transparent !important;
+    }
+
+    /* 3. 입력칸 디자인: 흰색 알약 모양 + 버건디 테두리 */
+    .stChatInput textarea {
+        background-color: #FFFFFF !important; /* 입력창 안은 흰색 */
+        border: 2px solid #8A1538 !important; /* 버건디 테두리 */
+        border-radius: 25px !important; /* 더 둥글게 */
+        box-shadow: 0 4px 10px rgba(138, 21, 56, 0.1) !important; /* 아주 연한 그림자 */
+        color: #333333 !important;
+        padding-left: 15px !important;
+    }
+    
+    /* 4. 포커스 잡혔을 때 강조 효과 */
+    .stChatInput textarea:focus {
+        border-color: #8A1538 !important;
+        box-shadow: 0 0 0 3px rgba(138, 21, 56, 0.2) !important;
+    }
+
+    /* 5. 전송 버튼 아이콘 색상 */
+    [data-testid="stChatInputSubmitButton"] {
+        color: #8A1538 !important;
+        background-color: transparent !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 
 
