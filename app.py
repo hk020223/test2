@@ -28,6 +28,11 @@ st.set_page_config(
 
 # 2. 통합 스타일 설정 (버건디 테마 + 모바일 최적화 + 채팅창 디자인)
 def set_style():
+    /* [기본 테마] 전체 배경: 은은한 광운 버건디 그라데이션 */
+        .stApp {
+            /* 상단은 거의 화이트에 가까운 아주 연한 핑크, 하단으로 갈수록 은은한 버건디 빛이 돔 */
+            background: linear-gradient(to bottom, #ffffff 0%, #FFF0F5 70%, #FFE4E9 100%);
+        }
     st.markdown("""
         <style>
         /* [기본 테마] 전체 배경: 은은한 톤 */
@@ -1028,5 +1033,6 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
