@@ -98,16 +98,10 @@ st.markdown("<h5 style='text-align: center; color: #666;'>광운대학교 학생
 st.write("") 
 
 
-
 st.divider()
 
-# 3. 기능 구현
-if selected_function == "💬 AI 학사 지식인":
-    # 3-1. 채팅 기록 초기화 (세션 상태 사용)
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
 
-   
+
     # 3-3. 채팅 히스토리 출력
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -125,14 +119,6 @@ if selected_function == "💬 AI 학사 지식인":
             response = "💡 (AI 응답 예시) 네, 광운대학교 졸업 요건에 대해 알려드릴게요."
             st.markdown(response)
             st.session_state.messages.append({"role": "assistant", "content": response})
-
-elif selected_function == "🗓️ 스마트 시간표":
-    st.success("📅 **스마트 시간표** 화면입니다. 시간표를 자유롭게 수정해보세요.")
-
-elif selected_function == "📈 성적/진로 진단":
-    st.warning("📊 **성적 및 진로 진단** 화면입니다. 성적표를 분석합니다.")
-
-
 
 
 st.divider()
@@ -1122,6 +1108,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
