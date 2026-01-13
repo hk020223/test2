@@ -20,56 +20,7 @@ from firebase_admin import credentials, firestore
 # [0] 설정 및 데이터 로드
 # -----------------------------------------------------------------------------
 st.set_page_config(page_title="KW-강의마스터 Pro", page_icon="🎓", layout="wide")
-# [디자인 커스텀] 광운대 테마 CSS 적용
-st.markdown("""
-    <style>
-        /* 1. 메인 화면 여백 줄이기 */
-        .block-container {
-            padding-top: 2rem !important;
-            padding-bottom: 2rem !important;
-            max-width: 100% !important;
-        }
-        
-        /* 2. 칙칙한 버튼 디자인 변경 (광운대 버건디 색상 적용) */
-        div.stButton > button {
-            width: 100%;
-            background-color: #8a1601; /* 광운대 버건디 */
-            color: white;
-            border-radius: 10px;
-            border: none;
-            padding: 10px 20px;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-        div.stButton > button:hover {
-            background-color: #a61b01; /* 호버 시 조금 더 밝게 */
-            color: white;
-            border: 1px solid white;
-        }
-        
-        /* 3. 사이드바 디자인 */
-        section[data-testid="stSidebar"] {
-            background-color: #f8f9fa; /* 아주 연한 회색 */
-            border-right: 1px solid #ddd;
-        }
-        
-        /* 4. Streamlit 기본 햄버거 메뉴/푸터 숨기기 (깔끔하게) */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-        
-        /* 5. 채팅창 메시지 스타일 (카카오톡 느낌) */
-        [data-testid="stChatMessage"] {
-            background-color: #f1f3f5;
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 10px;
-        }
-        [data-testid="stChatMessage"][data-author="human"] {
-            background-color: #ffe0e0; /* 질문은 연한 붉은색 배경 */
-        }
-    </style>
-""", unsafe_allow_html=True)
+
 # [모바일 최적화 CSS]
 st.markdown("""
     <style>
