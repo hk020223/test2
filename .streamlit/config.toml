@@ -1,6 +1,17 @@
 [theme]
-primaryColor = "#3B82F6"
-backgroundColor = "#0E1117"
-secondaryBackgroundColor = "#161B22"
-textColor = "#FAFAFA"
+# 광운대 UI (버건디 & 화이트)
+
+# 메인 포인트 컬러 (버튼, 링크 등) - 광운대 심볼 색상
+primaryColor = "#8A1538"
+
+# 전체 배경색 - 깔끔한 흰색
+backgroundColor = "#FFFFFF"
+
+# 보조 배경색 (사이드바, 입력창 배경) - 연한 회색
+secondaryBackgroundColor = "#F0F2F6"
+
+# 글자 색상 - 진한 검정 (가독성 확보)
+textColor = "#262730"
+
+# 폰트
 font = "sans serif"
