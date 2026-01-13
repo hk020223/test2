@@ -19,79 +19,47 @@ from firebase_admin import credentials, firestore
 # -----------------------------------------------------------------------------
 # [0] 설정 및 데이터 로드
 # -----------------------------------------------------------------------------
-# 1. 페이지 설정 (아이콘 수정됨)
-st.set_page_config(
-    page_title="KW-Plan: AI 학사 설계",
-    page_icon="🦄",
-    layout="wide"
-)
+st.set_page_config(page_title="KW-강의마스터 Pro", page_icon="🎓", layout="wide")
 
-# 2. 통합 스타일 설정 (버건디 테마 + 모바일 최적화 + 채팅창 디자인)
-def set_style():
-   
-    # ▼▼▼ [최종_진짜_해결.py] 기존 맨 아래 CSS 코드를 지우고 이걸 붙여넣으세요 ▼▼▼
+# [모바일 최적화 CSS 및 컴팩트 뷰 스타일링]
 st.markdown("""
     <style>
-    /* 1. 전체 배경 (광운대 버건디 틴트) */
-    .stApp {
-        background: linear-gradient(180deg, #FFFFFF 0%, #FFF0F5 100%) !important;
-        background-attachment: fixed !important;
-    }
-
-    /* 2. [문제 해결] 하단 영역 전체 투명화 */
-    [data-testid="stBottom"] {
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-    [data-testid="stBottom"] > div {
-        background-color: transparent !important;
-    }
-
-    /* 3. [핵심] 입력창 뒤에 깔리는 '희미한 회색 박스' 제거 */
-    /* 이 부분이 핵심입니다. 입력창을 감싸는 컨테이너의 배경을 날려버림 */
-    [data-testid="stChatInput"] {
-        background-color: transparent !important;
-        border-color: transparent !important;
-    }
-    
-    /* 입력창 내부의 첫 번째 래퍼(Wrapper)도 투명하게 */
-    [data-testid="stChatInput"] > div {
-        background-color: transparent !important;
-        border-color: transparent !important;
-        box-shadow: none !important;
-    }
-
-    /* 4. 실제 입력칸(Textarea)만 흰색 알약으로 디자인 */
-    textarea[data-testid="stChatInputTextArea"] {
-        background-color: #FFFFFF !important; /* 여기만 흰색 */
-        border: 2px solid #8A1538 !important; /* 버건디 테두리 */
-        border-radius: 30px !important; /* 둥글게 */
-        padding: 15px !important;
-        box-shadow: 0 4px 12px rgba(138, 21, 56, 0.1) !important;
-    }
-    
-    /* 5. 포커스 효과 */
-    textarea[data-testid="stChatInputTextArea"]:focus {
-        border-color: #8A1538 !important;
-        box-shadow: 0 0 0 3px rgba(138, 21, 56, 0.2) !important;
-    }
-
-    /* 6. 전송 버튼 아이콘 */
-    [data-testid="stChatInputSubmitButton"] {
-        background-color: transparent !important;
-        color: #8A1538 !important;
-    }
-    
-    /* 7. 전송 버튼 아이콘 호버 효과 제거 (배경 생기는 거 방지) */
-    [data-testid="stChatInputSubmitButton"]:hover {
-        background-color: transparent !important;
-        color: #5F0E26 !important;
-    }
+        footer { visibility: hidden; }
+        /* 모바일 최적화 */
+        @media only screen and (max-width: 600px) {
+            .main .block-container {
+                padding-left: 0.2rem !important;
+                padding-right: 0.2rem !important;
+                padding-top: 2rem !important;
+                max-width: 100% !important;
+            }
+        }
+        /* 시간표 테이블 스타일 */
+        div[data-testid="stMarkdownContainer"] table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            display: table !important;
+            font-size: 11px !important;
+            margin-bottom: 0px !important;
+        }
+        div[data-testid="stMarkdownContainer"] th, 
+        div[data-testid="stMarkdownContainer"] td {
+            padding: 2px !important;
+            word-wrap: break-word !important;
+            word-break: break-all !important;
+            white-space: normal !important;
+            line-height: 1.2 !important;
+            vertical-align: middle !important;
+        }
+        /* 버튼 높이 조정 */
+        button[kind="primary"], button[kind="secondary"] {
+            padding: 0.2rem 0.5rem !important;
+            min-height: 0px !important;
+            height: auto !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-set_style()
 # API Key 로드
 if "GOOGLE_API_KEY" in st.secrets:
     api_key = st.secrets["GOOGLE_API_KEY"]
@@ -682,26 +650,9 @@ with st.sidebar:
     else:
         st.error("⚠️ 데이터 폴더에 PDF 파일이 없습니다.")
 
-# -----------------------------------------------------------------------------
-# [2] UI 구성 (디자인 적용됨)
-# -----------------------------------------------------------------------------
-
-# 1. 상단 헤더 (중앙 정렬 타이틀)
-st.markdown("<h1 style='text-align: center; color: #8A1538;'>🦄 Kwangwoon AI Planner</h1>", unsafe_allow_html=True)
-st.markdown("<h5 style='text-align: center; color: #666;'>광운대학교 학생을 위한 지능형 수강설계 에이전트</h5>", unsafe_allow_html=True)
-st.write("") 
-
-# 2. 기능 선택 메뉴 (중앙 정렬 라디오 버튼)
-_, col_center, _ = st.columns([1, 4, 1])
-with col_center:
-    menu = st.radio(
-        "메뉴 선택", # 라벨 숨김 처리됨
-        options=["🤖 AI 학사 지식인", "📅 스마트 시간표(수정가능)", "📈 성적 및 진로 진단"],
-        index=0,
-        horizontal=True,
-        key="menu_radio",
-        label_visibility="collapsed"
-    )
+# 메뉴 구성
+menu = st.radio("기능 선택", ["🤖 AI 학사 지식인", "📅 스마트 시간표(수정가능)", "📈 성적 및 진로 진단"], 
+                horizontal=True, key="menu_radio")
 
 if menu != st.session_state.current_menu:
     st.session_state.current_menu = menu
@@ -1022,12 +973,3 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
-
-
-
-
-
-
-
-
-
