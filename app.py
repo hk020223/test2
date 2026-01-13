@@ -71,6 +71,15 @@ def set_style():
     """, unsafe_allow_html=True)
 
 set_style()
+# --- UI 레이아웃 구성 ---
+
+# 1. 타이틀 및 서브텍스트 (중앙 정렬)
+col_a, col_b, col_c = st.columns([1, 2, 1])
+with col_b:
+    st.title("🦄 Kwangwoon AI Planner")
+st.markdown("<h5 style='text-align: center; color: #555;'>광운대학교 학생을 위한 지능형 수강설계 에이전트입니다</h5>", unsafe_allow_html=True)
+
+
 
 
 
@@ -1061,6 +1070,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
