@@ -17,48 +17,88 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # [0] 설정 및 데이터 로드
 # -----------------------------------------------------------------------------
-st.set_page_config(page_title="KW-강의마스터 Pro", page_icon="🎓", layout="wide")
+# 1. 페이지 설정 (아이콘 수정됨)
+st.set_page_config(
+    page_title="KW-Plan: AI 학사 설계",
+    page_icon="🦄",
+    layout="wide"
+)
 
-# [모바일 최적화 CSS 및 컴팩트 뷰 스타일링]
-st.markdown("""
-    <style>
+# 2. 통합 스타일 설정 (버건디 테마 + 모바일 최적화 + 채팅창 디자인)
+def set_style():
+    st.markdown("""
+        <style>
+        /* [기본 테마] 전체 배경: 은은한 톤 */
+        .stApp {
+            background: linear-gradient(to bottom, #ffffff 0%, #fafafa 100%);
+        }
+
+        /* [타이틀] 광운 버건디 색상 적용 */
+        h1 {
+            color: #8A1538 !important;
+            font-family: 'Pretendard', sans-serif;
+            font-weight: 800;
+        }
+        
+        /* [메뉴] 라디오 버튼 스타일링 (카드 형태) */
+        div.row-widget.stRadio > div {
+            justify-content: center;
+            gap: 15px;
+        }
+        div.row-widget.stRadio > div[role="radiogroup"] > label {
+            background-color: white;
+            border: 2px solid #E9ECEF;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            color: #495057;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            transition: all 0.2s;
+        }
+        div.row-widget.stRadio > div[role="radiogroup"] > label:hover,
+        div.row-widget.stRadio > div[role="radiogroup"] > label[data-checked="true"] {
+            border-color: #8A1538;
+            background-color: #FFF5F7;
+            color: #8A1538;
+        }
+
+        /* [채팅창] 둥글고 버건디색 포커스 */
+        [data-testid="stChatInput"] {
+            background-color: transparent;
+        }
+        .stChatInput textarea {
+            background-color: #F8F9FA; 
+            border: 1px solid #E9ECEF;
+            border-radius: 20px; 
+            padding: 12px;
+        }
+        .stChatInput textarea:focus {
+            border-color: #8A1538 !important;
+            box-shadow: 0 0 0 1px #8A1538 !important;
+        }
+        [data-testid="stChatInputSubmitButton"] {
+            color: #8A1538;
+        }
+
+        /* [모바일 최적화 및 테이블] */
         footer { visibility: hidden; }
-        /* 모바일 최적화 */
         @media only screen and (max-width: 600px) {
             .main .block-container {
                 padding-left: 0.2rem !important;
                 padding-right: 0.2rem !important;
-                padding-top: 2rem !important;
-                max-width: 100% !important;
             }
         }
-        /* 시간표 테이블 스타일 */
         div[data-testid="stMarkdownContainer"] table {
             width: 100% !important;
             table-layout: fixed !important;
-            display: table !important;
-            font-size: 11px !important;
-            margin-bottom: 0px !important;
         }
-        div[data-testid="stMarkdownContainer"] th, 
-        div[data-testid="stMarkdownContainer"] td {
-            padding: 2px !important;
-            word-wrap: break-word !important;
-            word-break: break-all !important;
-            white-space: normal !important;
-            line-height: 1.2 !important;
-            vertical-align: middle !important;
-        }
-        /* 버튼 높이 조정 */
-        button[kind="primary"], button[kind="secondary"] {
-            padding: 0.2rem 0.5rem !important;
-            min-height: 0px !important;
-            height: auto !important;
-        }
-    </style>
-""", unsafe_allow_html=True)
+        </style>
+    """, unsafe_allow_html=True)
+
+set_style()
 
 # API Key 로드
 if "GOOGLE_API_KEY" in st.secrets:
@@ -973,3 +1013,4 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
