@@ -18,90 +18,91 @@ from firebase_admin import credentials, firestore
 
 import streamlit as st
 
-# 페이지 기본 설정 (가장 위에 있어야 함)
+# 1. 페이지 설정 (가장 상단)
 st.set_page_config(
     page_title="KW-Plan: AI 학사 설계",
-    page_icon="🎓",
+    page_icon="🦄",  # 비마(Pegasus) 아이콘
     layout="wide"
 )
 
+# 2. 스타일 설정 (배경 및 폰트)
 def set_style():
     st.markdown("""
         <style>
-        /* 1. 배경 설정 (광운대 로고 + 은은한 그라데이션) */
+        /* 배경: 광운대 심볼 워터마크 (투명도 조절로 깔끔하게) */
         .stApp {
-            /* 배경 이미지 URL (광운대 UI 심볼) */
-            background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), 
+            background-image: linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)), 
                               url("https://www.kw.ac.kr/ko/img/intro/symbol_ui01.jpg");
-            background-size: cover;
-            background-position: center;
+            background-size: 40vh;
+            background-repeat: no-repeat;
+            background-position: center center;
             background-attachment: fixed;
         }
 
-        /* 2. 사이드바 스타일 (버건디 그라데이션) */
-        [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #F8F9FA 0%, #E9ECEF 100%);
-            border-right: 1px solid #ddd;
-        }
-        
-        /* 3. 헤더/폰트 스타일 */
-        h1, h2, h3 {
-            color: #8A1538 !important; /* 광운 버건디 */
+        /* 메인 타이틀 색상 (광운 버건디) */
+        h1 {
+            color: #8A1538 !important;
             font-family: 'Pretendard', sans-serif;
-            font-weight: 700;
+            font-weight: 800;
         }
         
-        /* 4. 깔쌈한 버튼 스타일 (그림자 + 둥근 모서리) */
-        .stButton > button {
-            width: 100%;
-            background: linear-gradient(to right, #8A1538, #5c0d25);
-            color: white;
-            border-radius: 10px;
-            border: none;
-            padding: 10px 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        /* 라디오 버튼 꾸미기 (선택지 박스 스타일) */
+        div.row-widget.stRadio > div {
+            flex-direction: row;
+            gap: 20px;
+        }
+        /* 라디오 버튼 항목 스타일 */
+        div.row-widget.stRadio > div[role="radiogroup"] > label {
+            background-color: #F8F9FA;
+            border: 1px solid #E9ECEF;
+            padding: 15px 20px;
+            border-radius: 12px;
             font-weight: bold;
-            transition: all 0.3s ease;
+            transition: all 0.3s;
         }
-        .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(138, 21, 56, 0.3);
-        }
-
-        /* 5. 입력창 포커스 색상 변경 */
-        input:focus, textarea:focus, select:focus {
-            border-color: #8A1538 !important;
-            box-shadow: 0 0 0 1px #8A1538 !important;
+        /* 마우스 올렸을 때 */
+        div.row-widget.stRadio > div[role="radiogroup"] > label:hover {
+            border-color: #8A1538;
+            background-color: #FFF0F5;
         }
         </style>
     """, unsafe_allow_html=True)
 
-# 스타일 적용 함수 호출
 set_style()
 
-# --- 여기부터 본문 내용 작성 ---
-st.title("🦅 Kwangwoon AI Planner")
-st.write("광운대학교 학생을 위한 지능형 학사 설계 에이전트입니다.")
+# --- UI 레이아웃 구성 ---
 
-col1, col2 = st.columns(2)
-with col1:
-    st.info("💡 **Smart Advice**\n\nAI가 졸업 요건과 관심 직무를 분석합니다.")
-with col2:
-    st.button("내 학사 설계 시작하기")
+# 1. 타이틀 및 서브텍스트
+st.title("🦄 Kwangwoon AI Planner")
+st.markdown("##### 광운대학교 학생을 위한 지능형 수강설계 에이전트입니다")
 
+st.write("") # 여백 추가
+st.write("")
 
-# 안내 메시지
-st.info("💡 **Tip:** 왼쪽 사이드바에서 성적표(PDF)를 업로드하면 개인 맞춤형 분석이 시작됩니다.")
+# 2. 기능 선택 (라디오 버튼)
+st.write("### 기능 선택")
+selected_function = st.radio(
+    "사용할 기능을 선택해주세요",  # 화면에는 숨김 처리됨
+    options=["💬 AI 학사 지식인", "🗓️ 스마트 시간표(수정가능)", "📈 성적 및 진로 진단"],
+    index=0,  # 기본 선택값
+    horizontal=True, # 가로 배치
+    label_visibility="collapsed" # 라벨 숨기기
+)
 
-# 메인 액션 버튼 (중앙 배치 느낌을 위해 컬럼 활용)
-_, col_center, _ = st.columns([1, 2, 1])
-with col_center:
-    if st.button("🚀 내 졸업 요건 및 추천 커리큘럼 확인하기"):
-        st.success("학사 데이터 분석을 시작합니다... 잠시만 기다려 주세요!")
+st.divider()
 
-# 하단 부가 설명 (선택 사항)
-st.markdown("---")
-st.caption("© 2024 Kwangwoon University AI Planner. All rights reserved.")
+# 3. 선택된 기능에 따라 화면 표시 (플레이스홀더)
+if selected_function == "💬 AI 학사 지식인":
+    st.info("🤖 **AI 학사 지식인** 화면입니다. 궁금한 점을 물어보세요!")
+    # 여기에 챗봇 코드 넣기
+    
+elif selected_function == "🗓️ 스마트 시간표(수정가능)":
+    st.info("📅 **스마트 시간표** 화면입니다. 시간표를 생성하고 수정하세요.")
+    # 여기에 시간표 코드 넣기
+    
+elif selected_function == "📈 성적 및 진로 진단":
+    st.info("📊 **성적 및 진로 진단** 화면입니다. 내 성적을 분석합니다.")
+    # 여기에 성적 분석 코드 넣기
 
 # -----------------------------------------------------------------------------
 # [0] 설정 및 데이터 로드
@@ -1086,6 +1087,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
