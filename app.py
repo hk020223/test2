@@ -72,31 +72,7 @@ def set_style():
 
 set_style()
 
-# --- UI 레이아웃 구성 ---
 
-# 1. 타이틀 및 서브텍스트 (중앙 정렬)
-col_a, col_b, col_c = st.columns([1, 2, 1])
-with col_b:
-    st.title("🦄 Kwangwoon AI Planner")
-st.markdown("<h5 style='text-align: center; color: #555;'>광운대학교 학생을 위한 지능형 수강설계 에이전트입니다</h5>", unsafe_allow_html=True)
-
-st.write("") # 여백 추가
-st.write("")
-
-# 2. 기능 선택 (라디오 버튼) - 하나만 남기고 중앙 배치
-st.markdown("<h3 style='text-align: center;'>기능 선택</h3>", unsafe_allow_html=True)
-st.write("")
-
-# 라디오 버튼을 중앙에 배치하기 위한 컬럼
-_, col_radio, _ = st.columns([1, 3, 1])
-with col_radio:
-    selected_function = st.radio(
-        "사용할 기능을 선택해주세요",
-        options=["💬 AI 학사 지식인", "🗓️ 스마트 시간표(수정가능)", "📈 성적 및 진로 진단"],
-        index=0,
-        horizontal=True,
-        label_visibility="collapsed"
-    )
 
 st.divider()
 
@@ -1085,6 +1061,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
+
 
 
 
