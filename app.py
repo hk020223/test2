@@ -1029,16 +1029,7 @@ elif st.session_state.current_menu == "📈 성적 및 진로 진단":
             st.session_state.graduation_analysis_result = ""
             st.session_state.graduation_chat_history = []
             st.rerun()
-# ▼▼▼ [배경색 변경 코드] 파일 맨 아래에 붙여넣으세요 ▼▼▼
-st.markdown("""
-    <style>
-    /* 전체 배경: 화이트 -> 아주 연한 버건디(광운대 느낌) 그라데이션 */
-    .stApp {
-        background: linear-gradient(to bottom, #ffffff 0%, #FFF0F5 100%) !important;
-        background-attachment: fixed !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
+
 
 
 
